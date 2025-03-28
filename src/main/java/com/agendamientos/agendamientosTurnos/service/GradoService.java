@@ -1,8 +1,8 @@
-package com.agendamientos.agendamientosTurnos.Service;
+package com.agendamientos.agendamientosTurnos.service;
 
 
-import com.agendamientos.agendamientosTurnos.Entity.Grado;
-import com.agendamientos.agendamientosTurnos.Repository.GradoRepository;
+import com.agendamientos.agendamientosTurnos.entity.Grado;
+import com.agendamientos.agendamientosTurnos.repository.GradoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

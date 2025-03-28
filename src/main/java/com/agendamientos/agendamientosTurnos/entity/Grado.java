@@ -1,4 +1,4 @@
-package com.agendamientos.agendamientosTurnos.Entity;
+package com.agendamientos.agendamientosTurnos.entity;
 
 
 import jakarta.persistence.Column;

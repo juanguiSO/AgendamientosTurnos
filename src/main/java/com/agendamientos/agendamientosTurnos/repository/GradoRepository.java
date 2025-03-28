@@ -1,6 +1,6 @@
-package com.agendamientos.agendamientosTurnos.Repository;
+package com.agendamientos.agendamientosTurnos.repository;
 
-import com.agendamientos.agendamientosTurnos.Entity.Grado;
+import com.agendamientos.agendamientosTurnos.entity.Grado;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
