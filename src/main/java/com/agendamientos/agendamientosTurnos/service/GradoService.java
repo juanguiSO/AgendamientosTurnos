@@ -16,32 +16,72 @@ public class GradoService {
     GradoRepository gradoRepository;
 
 
-    // Obtener un grado por su ID
-    public Optional<Grado> getGrado(Long id) {
-        return gradoRepository.findById(id);
+
+    public List<Grado> obtenerTodosLosGrados() { // Cambié "getAllGrados"
+        return gradoRepository.findByActivoTrue(); // Recupera solo los grados activos (cambié el nombre)
     }
 
-    // Obtener todos los Grados
-    public List<Grado> getGrados() {
-        return gradoRepository.findAll();
+    public Optional<Grado> obtenerGradoPorId(Long id) { // Cambié "getGradoById"
+        return gradoRepository.findById(id);  // Considera verificar "activo" aquí también, si es necesario
     }
 
-    // Guardar un nuevo grado
-    public Grado saveGrado(Grado grado) {
+    public Grado crearGrado(String valorGrado, String valorNombreGrado) { // Cambié "createGrado"
+
+        //Validación
+        if (valorGrado == null || valorGrado.isEmpty() || valorNombreGrado == null || valorNombreGrado.isEmpty()){
+            throw new IllegalArgumentException("Grado y Nombre del grado no deben estar vacíos.");
+        }
+        if (valorGrado.length() > 45){
+            throw new IllegalArgumentException("Grado no debe tener más de 45 caracteres.");
+        }
+
+        if (valorNombreGrado.length() > 4){
+            throw new IllegalArgumentException("NombreGradoValue no debe tener más de 4 caracteres.");
+        }
+
+        Grado grado = new Grado(valorGrado, valorNombreGrado);
         return gradoRepository.save(grado);
     }
 
+    public Grado actualizarGrado(Long id, String valorGrado, String valorNombreGrado) { // Cambié "updateGrado"
 
-    // Eliminar un usuario por su ID
-    public void deleteGrado(Long id) {
+        //Validación
+        if (valorGrado == null || valorGrado.isEmpty() || valorNombreGrado == null || valorNombreGrado.isEmpty()){
+            throw new IllegalArgumentException("Grado y Nombre del grado no deben estar vacíos.");
+        }
+        if (valorGrado.length() > 45){
+            throw new IllegalArgumentException("Grado no debe tener más de 45 caracteres.");
+        }
+
+        if (valorNombreGrado.length() > 4){
+            throw new IllegalArgumentException("NombreGradoValue no debe tener más de 4 caracteres.");
+        }
+
         Optional<Grado> gradoExistente = gradoRepository.findById(id);
-
         if (gradoExistente.isPresent()) {
-            gradoRepository.deleteById(id); // Elimina el registro de la base de datos
+            Grado gradoParaActualizar = gradoExistente.get();
+            gradoParaActualizar.setGrado(valorGrado);
+            gradoParaActualizar.setNombreGrado(valorNombreGrado);
+            return gradoRepository.save(gradoParaActualizar);
         } else {
-            throw new RuntimeException("Grado con ID " + id + " no encontrado.");
+            return null; // O lanza una excepción indicando que el Grado no fue encontrado
         }
     }
+
+    public boolean eliminarGrado(Long id) { // Cambié "deleteGrado"
+        Optional<Grado> gradoExistente = gradoRepository.findById(id);
+        if (gradoExistente.isPresent()) {
+            Grado gradoParaEliminar = gradoExistente.get();
+            gradoParaEliminar.setActivo(false);  // Eliminación lógica
+            gradoRepository.save(gradoParaEliminar);
+            return true;
+        } else {
+            return false; // O lanza una excepción indicando que el Grado no fue encontrado
+        }
+    }
+
+
+
 
 
 }
