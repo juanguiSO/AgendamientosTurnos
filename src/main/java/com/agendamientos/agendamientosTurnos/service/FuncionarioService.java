@@ -25,7 +25,8 @@ public class FuncionarioService {
     private RolesRepository rolesRepository; // Inject RolesRepository
 
     public List<Funcionario> getAllFuncionarios() {
-        return funcionarioRepository.findAll();
+        return funcionarioRepository.findByActivoTrue(); // Solo muestra activos
+
     }
 
     public Optional<Funcionario> getFuncionarioById(Integer id) {
@@ -43,6 +44,9 @@ public class FuncionarioService {
         funcionario.setTelefono(funcionarioDTO.getTelefono());
         funcionario.setIdEspecialidad(funcionarioDTO.getIdEspecialidad());
         funcionario.setIdGrado(funcionarioDTO.getIdGrado());
+        funcionario.setActivo(funcionarioDTO.getActivo());
+
+
 
         // 2. Cargar Roles desde la Base de Datos basándose en los IDs en el DTO
         Set<Roles> rolesPersistidos = new HashSet<>();
@@ -80,6 +84,17 @@ public class FuncionarioService {
 
         return funcionarioRepository.save(funcionario);
     }
+    public boolean softDeleteFuncionario(String cedula) {
+        Optional<Funcionario> funcionarioOptional = funcionarioRepository.findByCedula(cedula);
+        if (funcionarioOptional.isPresent()) {
+            Funcionario funcionario = funcionarioOptional.get();
+            funcionario.setActivo(false); // Borrado lógico
+            funcionarioRepository.save(funcionario);
+            return true;
+        }
+        return false;
+    }
+
 
 
     public Funcionario updateFuncionario(Integer id, Funcionario funcionarioDetails) {
@@ -93,6 +108,7 @@ public class FuncionarioService {
             existingFuncionario.setTelefono(funcionarioDetails.getTelefono());
             existingFuncionario.setIdEspecialidad(funcionarioDetails.getIdEspecialidad());
             existingFuncionario.setIdGrado(funcionarioDetails.getIdGrado());
+            existingFuncionario.setActivo(funcionarioDetails.isActivo());
             //existingFuncionario.setContrasena(funcionarioDetails.getContrasena());  // No actualices la contraseña directamente aquí!
             existingFuncionario.setRoles(funcionarioDetails.getRoles());  // Actualiza los roles
             return funcionarioRepository.save(existingFuncionario);

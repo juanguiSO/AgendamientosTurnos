@@ -41,12 +41,26 @@ public class Funcionario {
     @Column(name = "contrasena", length = 255)
     private String contrasena;
 
+    @Column(name = "is_active", columnDefinition = "TINYINT(1) DEFAULT 1")
+    private boolean activo = true;
+
     //Relacion muchos a muchos con roles
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
     @JoinTable(name = "funcionario_roles",
             joinColumns = @JoinColumn(name = "id_funcionario", referencedColumnName = "id_funcionario"),
             inverseJoinColumns = @JoinColumn(name = "id_roles", referencedColumnName = "id_roles"))
     private Set<Roles> roles;
+
+    @Column(name = "is_active", columnDefinition = "TINYINT(1)")
+    public boolean isActivo() {
+        return activo;
+    }
+
+
+    // Método para cambiar el estado activo/inactivo
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
 
     public String getApellido() {
         return apellido;

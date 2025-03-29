@@ -1,10 +1,24 @@
 package com.agendamientos.agendamientosTurnos.repository;
 
 import com.agendamientos.agendamientosTurnos.entity.Funcionario;
+import com.agendamientos.agendamientosTurnos.entity.Grado;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
-@Repository
-public interface FuncionarioRepository extends JpaRepository<Funcionario, Integer> {
-    // Puedes añadir métodos de consulta personalizados aquí si es necesario
-}
+import java.util.List;
+import java.util.Optional;
+
+
+    @Repository
+    public interface FuncionarioRepository extends JpaRepository<Funcionario, Integer> {
+
+        Optional<Funcionario> findByCedula(String cedula);
+
+        // Solo devolver funcionarios activos
+        List<Funcionario> findByActivoTrue();
+
+        Funcionario findByCorreo(String correo);
+        boolean existsByCorreo(String correo);
+    }
+

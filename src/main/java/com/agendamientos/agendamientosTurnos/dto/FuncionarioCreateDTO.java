@@ -14,13 +14,24 @@ public class FuncionarioCreateDTO {
     private String telefono;
     private Integer idEspecialidad;
     private Integer idGrado;
-    private String contrasena;  // Sólo necesaria si es administrador
+    private String contrasena; // Sólo necesaria si es administrador
+    private Boolean activo;
     private List<Integer> roleIds; // Lista de IDs de roles existentes
 
 
     public Integer getIdGrado() {
         return idGrado;
     }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
+
 
     public String getTelefono() {
         return telefono;

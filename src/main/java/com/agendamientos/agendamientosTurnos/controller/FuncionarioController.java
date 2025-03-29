@@ -51,4 +51,12 @@ public class FuncionarioController {
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+    @DeleteMapping("/cedula/{cedula}")
+    public ResponseEntity<String> deleteFuncionario(@PathVariable String cedula) {
+        boolean eliminado = funcionarioService.softDeleteFuncionario(cedula);
+        if (eliminado) {
+            return new ResponseEntity<>("Funcionario desactivado correctamente.", HttpStatus.OK);
+        }
+        return new ResponseEntity<>("Funcionario no encontrado.", HttpStatus.NOT_FOUND);
+    }
 }
