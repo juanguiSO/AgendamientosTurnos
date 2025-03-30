@@ -17,19 +17,19 @@ public class Funcionario {
     @Column(name = "id_funcionario")
     private Integer idFuncionario;
 
-    @Column(name = "apellido", length = 45)
+    @Column(name = "apellido", length = 45, nullable = false)  //Agregado `nullable = false`
     private String apellido;
 
-    @Column(name = "cedula", length = 45)
+    @Column(name = "cedula", length = 45, nullable = false, unique = true) //Agregado `nullable = false` y `unique = true`
     private String cedula;
 
-    @Column(name = "correo", length = 45)
+    @Column(name = "correo", length = 45, nullable = false, unique = true) //Agregado `nullable = false` y `unique = true`
     private String correo;
 
-    @Column(name = "nombre", length = 45)
+    @Column(name = "nombre", length = 45, nullable = false)  //Agregado `nullable = false`
     private String nombre;
 
-    @Column(name = "telefono", length = 45)
+    @Column(name = "telefono", length = 45, nullable = false)  //Agregado `nullable = false`
     private String telefono;
 
     @Column(name = "id_especialidad")
@@ -38,11 +38,14 @@ public class Funcionario {
     @Column(name = "id_grado")
     private Integer idGrado; // Foreign Key a Grado
 
-    @Column(name = "contrasena", length = 255)
+    @Column(name = "contrasena", length = 255, nullable = false) //Agregado `nullable = false`
     private String contrasena;
 
-    @Column(name = "is_active", columnDefinition = "TINYINT(1) DEFAULT 1")
+    @Column(name = "is_active", columnDefinition = "TINYINT(1)")
     private boolean activo = true;
+
+    @Column(name = "id_cargo")  // Nuevo campo agregado
+    private Integer idCargo;    // Foreign Key a Cargo
 
     //Relacion muchos a muchos con roles
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
@@ -51,16 +54,22 @@ public class Funcionario {
             inverseJoinColumns = @JoinColumn(name = "id_roles", referencedColumnName = "id_roles"))
     private Set<Roles> roles;
 
-    @Column(name = "is_active", columnDefinition = "TINYINT(1)")
-    public boolean isActivo() {
-        return activo;
+    public Integer getIdCargo() {
+        return idCargo;
     }
 
+    public void setIdCargo(Integer idCargo) {
+        this.idCargo = idCargo;
+    }
 
     // Método para cambiar el estado activo/inactivo
     public void setActivo(boolean activo) {
         this.activo = activo;
     }
+    public boolean getActivo() {
+        return activo;
+    }
+
 
     public String getApellido() {
         return apellido;
@@ -137,4 +146,9 @@ public class Funcionario {
     public void setIdGrado(Integer idGrado) {
         this.idGrado = idGrado;
     }
+
+    public Integer getIdFuncionario() {
+        return idFuncionario;
+    }
+
 }

@@ -61,8 +61,7 @@ public class GradoService {
         if (gradoExistente.isPresent()) {
             Grado gradoParaActualizar = gradoExistente.get();
             gradoParaActualizar.setGrado(valorGrado);
-            gradoParaActualizar.setNombreGrado(valorNombreGrado);
-            return gradoRepository.save(gradoParaActualizar);
+               return gradoRepository.save(gradoParaActualizar);
         } else {
             return null; // O lanza una excepción indicando que el Grado no fue encontrado
         }

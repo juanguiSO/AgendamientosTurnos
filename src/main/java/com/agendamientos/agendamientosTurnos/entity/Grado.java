@@ -17,13 +17,12 @@ public class Grado {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_grado")
-    private int idGrado;
+    private Integer idGrado;
 
     @Column(name = "grado", length = 45, nullable = false)
     private String grado;
 
-    @Column(name = "nombre_grado", length = 4, nullable = false)
-    private String nombreGrado;
+    // Eliminado el campo nombreGrado
 
     @Column(name = "is_active", columnDefinition = "TINYINT(1) DEFAULT 1")
     private boolean activo = true;
@@ -35,7 +34,7 @@ public class Grado {
 
     public Grado(String grado, String nombreGrado) {
         this.grado = grado;
-        this.nombreGrado = nombreGrado;
+
     }
 
     public Integer getIdGrado() {
@@ -54,13 +53,6 @@ public class Grado {
         this.grado = grado;
     }
 
-    public String getNombreGrado() {
-        return nombreGrado;
-    }
-
-    public void setNombreGrado(String nombreGrado) {
-        this.nombreGrado = nombreGrado;
-    }
 
     public boolean isActivo() { // Cambié "isActive" a "isActivo"
         return activo;
@@ -75,7 +67,6 @@ public class Grado {
         return "Grado{" +
                 "idGrado=" + idGrado +
                 ", grado='" + grado + '\'' +
-                ", nombreGrado='" + nombreGrado + '\'' +
                 ", activo=" + activo + // Cambié "isActive" a "activo"
                 '}';
     }

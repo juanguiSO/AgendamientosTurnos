@@ -108,7 +108,7 @@ public class FuncionarioService {
             existingFuncionario.setTelefono(funcionarioDetails.getTelefono());
             existingFuncionario.setIdEspecialidad(funcionarioDetails.getIdEspecialidad());
             existingFuncionario.setIdGrado(funcionarioDetails.getIdGrado());
-            existingFuncionario.setActivo(funcionarioDetails.isActivo());
+            existingFuncionario.setActivo(funcionarioDetails.getActivo());
             //existingFuncionario.setContrasena(funcionarioDetails.getContrasena());  // No actualices la contraseña directamente aquí!
             existingFuncionario.setRoles(funcionarioDetails.getRoles());  // Actualiza los roles
             return funcionarioRepository.save(existingFuncionario);

@@ -1,9 +1,8 @@
 package com.agendamientos.agendamientosTurnos.repository;
 
+
 import com.agendamientos.agendamientosTurnos.entity.Funcionario;
-import com.agendamientos.agendamientosTurnos.entity.Grado;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
