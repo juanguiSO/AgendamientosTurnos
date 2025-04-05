@@ -14,24 +14,32 @@ public class FuncionarioCreateDTO {
     private String telefono;
     private Integer idEspecialidad;
     private Integer idGrado;
+    private Integer idRol;
     private String contrasena; // Sólo necesaria si es administrador
-    private Boolean activo;
-    private List<Integer> roleIds; // Lista de IDs de roles existentes
+    private Integer activo;
+    private Integer idCargo;
+    //private List<Integer> roleIds; // Lista de IDs de roles existentes
 
+
+    public void setIdCargo(Integer idCargo) {
+        this.idCargo = idCargo;
+    }
+
+    public Integer getIdCargo() {
+        return idCargo;
+    }
 
     public Integer getIdGrado() {
         return idGrado;
     }
 
-    public Boolean getActivo() {
+    public Integer getActivo() {
         return activo;
     }
 
-    public void setActivo(Boolean activo) {
+    public void setActivo(Integer activo) {
         this.activo = activo;
     }
-
-
 
     public String getTelefono() {
         return telefono;
@@ -43,6 +51,14 @@ public class FuncionarioCreateDTO {
 
     public Integer getIdEspecialidad() {
         return idEspecialidad;
+    }
+
+    public Integer getIdRol() {
+        return idRol;
+    }
+
+    public void setIdRol(Integer idRol) {
+        this.idRol = idRol;
     }
 
     public String getContrasena() {
@@ -61,8 +77,9 @@ public class FuncionarioCreateDTO {
         return nombre;
     }
 
-    public List<Integer> getRoleIds() {
-        return roleIds;
-    }
+
+    //public List<Integer> getRoleIds() {
+    //   return roleIds;
+    //}
 
 }

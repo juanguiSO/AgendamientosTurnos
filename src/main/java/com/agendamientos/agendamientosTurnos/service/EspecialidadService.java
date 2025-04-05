@@ -18,7 +18,7 @@ public class EspecialidadService {
         return especialidadRepository.findByActivoTrue();  // Recupera solo las especialidades activas (cambié el nombre)
     }
 
-    public Optional<Especialidad> obtenerEspecialidadPorId(Long id) { // Cambié "getEspecialidadById"
+    public Optional<Especialidad> obtenerEspecialidadPorId(Integer id) { // Cambié "getEspecialidadById"
         return especialidadRepository.findById(id); // Considera verificar "activo" aquí también
     }
 
@@ -36,7 +36,7 @@ public class EspecialidadService {
         return especialidadRepository.save(especialidad);
     }
 
-    public Especialidad actualizarEspecialidad(Long id, String valorEspecialidad) { // Cambié "updateEspecialidad"
+    public Especialidad actualizarEspecialidad(Integer id, String valorEspecialidad) { // Cambié "updateEspecialidad"
         //Validación
         if (valorEspecialidad == null || valorEspecialidad.isEmpty()){
             throw new IllegalArgumentException("Especialidad no debe estar vacía.");
@@ -55,7 +55,7 @@ public class EspecialidadService {
         }
     }
 
-    public boolean eliminarEspecialidad(Long id) { // Cambié "deleteEspecialidad"
+    public boolean eliminarEspecialidad(Integer id) { // Cambié "deleteEspecialidad"
         Optional<Especialidad> especialidadExistente = especialidadRepository.findById(id);
         if (especialidadExistente.isPresent()) {
             Especialidad especialidadParaEliminar = especialidadExistente.get();

@@ -22,8 +22,8 @@ public class Roles {
     @Column(name = "name", length = 20)
     private String name;
 
-    @ManyToMany(mappedBy = "roles")
-    private Set<Funcionario> funcionarios;
+   // @ManyToMany(mappedBy = "roles")
+    //private Set<Funcionario> funcionarios;
 
     @Override
     public boolean equals(Object o) {

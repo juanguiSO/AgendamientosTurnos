@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface EspecialidadRepository extends JpaRepository<Especialidad, Long> {
+public interface EspecialidadRepository extends JpaRepository<Especialidad, Integer> {
     List<Especialidad> findByActivoTrue();  // Consulta personalizada para encontrar solo especialidades activas
 }

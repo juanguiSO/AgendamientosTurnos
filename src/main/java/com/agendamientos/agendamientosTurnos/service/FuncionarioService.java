@@ -1,19 +1,16 @@
 package com.agendamientos.agendamientosTurnos.service;
-
 import com.agendamientos.agendamientosTurnos.dto.FuncionarioCreateDTO;
-import com.agendamientos.agendamientosTurnos.entity.Funcionario;
-import com.agendamientos.agendamientosTurnos.entity.Roles;
-import com.agendamientos.agendamientosTurnos.repository.FuncionarioRepository;
-import com.agendamientos.agendamientosTurnos.repository.RolesRepository;
+import com.agendamientos.agendamientosTurnos.dto.FuncionarioDTO;
+import com.agendamientos.agendamientosTurnos.entity.*;
+import com.agendamientos.agendamientosTurnos.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashSet;
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class FuncionarioService {
@@ -22,20 +19,24 @@ public class FuncionarioService {
     private FuncionarioRepository funcionarioRepository;
 
     @Autowired
-    private RolesRepository rolesRepository; // Inject RolesRepository
+    private RolRepository rolRepository;
 
-    public List<Funcionario> getAllFuncionarios() {
-        return funcionarioRepository.findByActivoTrue(); // Solo muestra activos
+    @Autowired
+    private EspecialidadRepository especialidadRepository; // Inyecta el repositorio
 
-    }
+    @Autowired
+    private GradoRepository gradoRepository;
 
-    public Optional<Funcionario> getFuncionarioById(Integer id) {
-        return funcionarioRepository.findById(id);
-    }
+    @Autowired
+    private CargoRepository cargoRepository;
+
 
     @Transactional
-    public Funcionario createFuncionario(FuncionarioCreateDTO funcionarioDTO) {
-        // 1. Crear un nuevo objeto Funcionario
+    public Funcionario createFuncionario(@Valid FuncionarioCreateDTO funcionarioDTO) {
+        // Validar la existencia del rol
+        Rol rol = rolRepository.findById(funcionarioDTO.getIdRol())
+                .orElseThrow(() -> new IllegalArgumentException("El rol especificado no existe"));
+
         Funcionario funcionario = new Funcionario();
         funcionario.setApellido(funcionarioDTO.getApellido());
         funcionario.setCedula(funcionarioDTO.getCedula());
@@ -45,75 +46,110 @@ public class FuncionarioService {
         funcionario.setIdEspecialidad(funcionarioDTO.getIdEspecialidad());
         funcionario.setIdGrado(funcionarioDTO.getIdGrado());
         funcionario.setActivo(funcionarioDTO.getActivo());
+        funcionario.setIdRol(funcionarioDTO.getIdRol());
+        funcionario.setIdCargo(funcionarioDTO.getIdCargo());
 
-
-
-        // 2. Cargar Roles desde la Base de Datos basándose en los IDs en el DTO
-        Set<Roles> rolesPersistidos = new HashSet<>();
-        if (funcionarioDTO.getRoleIds() != null) { // Check if there are Role IDs in the DTO
-            for (Integer roleId : funcionarioDTO.getRoleIds()) {
-                Optional<Roles> rolExistente = rolesRepository.findById(roleId);
-                if (rolExistente.isPresent()) {
-                    rolesPersistidos.add(rolExistente.get());
-                } else {
-                    throw new IllegalArgumentException("El rol con ID " + roleId + " no existe.");
-                }
-            }
-        }
-        funcionario.setRoles(rolesPersistidos);
-
-        // 3. Verificar si el funcionario tiene el rol de administrador (después de cargar los roles)
-        boolean esAdministrador = funcionario.getRoles().stream()
-                .anyMatch(rol -> rol.getName() != null && rol.getName().equalsIgnoreCase("Administrador"));  // Ajusta "Administrador" al nombre real de tu rol
-
-        // 4. Validar la contraseña si es administrador
-        if (esAdministrador && (funcionarioDTO.getContrasena() == null || funcionarioDTO.getContrasena().isEmpty())) {
-            throw new IllegalArgumentException("La contraseña es requerida para los administradores.");
-        }
-
-        // 5. Si no es administrador, asegúrate de que la contraseña esté vacía (o nula)
-        if (!esAdministrador) {
-            funcionario.setContrasena(null); // O "" si prefieres una cadena vacía
-        } else {
-            // 6. Hash de la contraseña (si es administrador y hay contraseña)
-            if (funcionarioDTO.getContrasena() != null) { // Asegúrate de que la contraseña no sea nula
-                String contrasenaHasheada = hashContrasena(funcionarioDTO.getContrasena());
-                funcionario.setContrasena(contrasenaHasheada);
-            }
+        // Generar contraseña para administradores
+        if (esAdmin(rol)) {
+            String contrasenaHasheada = hashContrasena("defensoria");
+            funcionario.setContrasena(contrasenaHasheada);
+        } else if (funcionarioDTO.getContrasena() != null && !funcionarioDTO.getContrasena().isEmpty()) {
+            String contrasenaHasheada = hashContrasena(funcionarioDTO.getContrasena());
+            funcionario.setContrasena(contrasenaHasheada);
         }
 
         return funcionarioRepository.save(funcionario);
     }
+
+
+    public List<FuncionarioDTO> getAllFuncionarios() {
+        List<Funcionario> funcionarios = funcionarioRepository.findAll();
+        return funcionarios.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+    }
+
+    private FuncionarioDTO convertToDTO(Funcionario funcionario) {
+        FuncionarioDTO dto = new FuncionarioDTO();
+        dto.setCedula(funcionario.getCedula());
+        dto.setNombre(funcionario.getNombre());
+        dto.setApellido(funcionario.getApellido());
+        dto.setCorreo(funcionario.getCorreo());
+        dto.setTelefono(funcionario.getTelefono());
+        dto.setEspecialidad(getEspecialidadNombre(funcionario.getIdEspecialidad()));
+        dto.setGrado(getGradoNombre(funcionario.getIdGrado()));
+        dto.setCargo(getCargoNombre(funcionario.getIdCargo()));
+        dto.setActivo(funcionario.getActivo());
+
+
+        return dto;
+    }
+
+    private String getEspecialidadNombre(Integer idEspecialidad) {
+        if (idEspecialidad == null) {
+            return null; // O un valor predeterminado si no hay especialidad
+        }
+        Optional<Especialidad> especialidadOptional = especialidadRepository.findById(idEspecialidad);
+        return especialidadOptional.map(Especialidad::getEspecialidad).orElse(null); // O un valor predeterminado si no se encuentra
+    }
+    private String getCargoNombre(Integer idCargo){
+        if (idCargo==null){
+            return null;
+        }
+        Optional<Cargo> cargoOptional= cargoRepository.findById(idCargo);
+        return cargoOptional.map(Cargo::getNombreCargo).orElse(null);
+    }
+
+    private String getGradoNombre (Integer idGrado){
+        if (idGrado== null){
+            return null;
+        }
+        Optional <Grado> gradoOptional = gradoRepository.findById(idGrado);
+        return  gradoOptional.map(Grado::getGrado).orElse(null);
+    }
+
+    public Optional<Funcionario> getFuncionarioById(Integer id) {
+        return funcionarioRepository.findById(id);
+    }
+
     public boolean softDeleteFuncionario(String cedula) {
         Optional<Funcionario> funcionarioOptional = funcionarioRepository.findByCedula(cedula);
         if (funcionarioOptional.isPresent()) {
             Funcionario funcionario = funcionarioOptional.get();
-            funcionario.setActivo(false); // Borrado lógico
+            funcionario.setActivo(0);
             funcionarioRepository.save(funcionario);
             return true;
         }
         return false;
     }
 
+    public Funcionario updateFuncionario(Integer id, @Valid FuncionarioCreateDTO funcionarioDTO) {
+        Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(id);
+        if (funcionarioOptional.isPresent()) {
+            Funcionario existingFuncionario = funcionarioOptional.get();
 
+            // Actualizar los campos con los valores del DTO
+            existingFuncionario.setApellido(funcionarioDTO.getApellido());
+            existingFuncionario.setCedula(funcionarioDTO.getCedula());
+            existingFuncionario.setCorreo(funcionarioDTO.getCorreo());
+            existingFuncionario.setNombre(funcionarioDTO.getNombre());
+            existingFuncionario.setTelefono(funcionarioDTO.getTelefono());
+            existingFuncionario.setIdEspecialidad(funcionarioDTO.getIdEspecialidad());
+            existingFuncionario.setIdGrado(funcionarioDTO.getIdGrado());
+            existingFuncionario.setActivo(funcionarioDTO.getActivo());
+            existingFuncionario.setIdRol(funcionarioDTO.getIdRol());
+            existingFuncionario.setIdCargo(funcionarioDTO.getIdCargo());
 
-    public Funcionario updateFuncionario(Integer id, Funcionario funcionarioDetails) {
-        Optional<Funcionario> funcionario = funcionarioRepository.findById(id);
-        if (funcionario.isPresent()) {
-            Funcionario existingFuncionario = funcionario.get();
-            existingFuncionario.setApellido(funcionarioDetails.getApellido());
-            existingFuncionario.setCedula(funcionarioDetails.getCedula());
-            existingFuncionario.setCorreo(funcionarioDetails.getCorreo());
-            existingFuncionario.setNombre(funcionarioDetails.getNombre());
-            existingFuncionario.setTelefono(funcionarioDetails.getTelefono());
-            existingFuncionario.setIdEspecialidad(funcionarioDetails.getIdEspecialidad());
-            existingFuncionario.setIdGrado(funcionarioDetails.getIdGrado());
-            existingFuncionario.setActivo(funcionarioDetails.getActivo());
-            //existingFuncionario.setContrasena(funcionarioDetails.getContrasena());  // No actualices la contraseña directamente aquí!
-            existingFuncionario.setRoles(funcionarioDetails.getRoles());  // Actualiza los roles
+            // Actualizar la contraseña si se proporciona
+            if (funcionarioDTO.getContrasena() != null && !funcionarioDTO.getContrasena().isEmpty()) {
+                String contrasenaHasheada = hashContrasena(funcionarioDTO.getContrasena());
+                existingFuncionario.setContrasena(contrasenaHasheada);
+            }
+
             return funcionarioRepository.save(existingFuncionario);
         }
-        return null;
+        return null; // O lanzar una excepción indicando que el funcionario no existe
     }
 
     public boolean deleteFuncionario(Integer id) {
@@ -125,7 +161,12 @@ public class FuncionarioService {
         return false;
     }
 
-    // Método para hashear la contraseña (ejemplo usando BCrypt)
+    // Método auxiliar para verificar si el rol es administrador
+    private boolean esAdmin(Rol rol) {
+        // Verificar si el rol es nulo y si el id_Rol es 2 (Admin)
+        return rol != null && rol.getIdRol() == 2;
+    }
+
     private String hashContrasena(String contrasena) {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         return passwordEncoder.encode(contrasena);

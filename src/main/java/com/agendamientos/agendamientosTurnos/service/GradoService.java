@@ -21,7 +21,7 @@ public class GradoService {
         return gradoRepository.findByActivoTrue(); // Recupera solo los grados activos (cambié el nombre)
     }
 
-    public Optional<Grado> obtenerGradoPorId(Long id) { // Cambié "getGradoById"
+    public Optional<Grado> obtenerGradoPorId(Integer id) { // Cambié "getGradoById"
         return gradoRepository.findById(id);  // Considera verificar "activo" aquí también, si es necesario
     }
 
@@ -43,7 +43,7 @@ public class GradoService {
         return gradoRepository.save(grado);
     }
 
-    public Grado actualizarGrado(Long id, String valorGrado, String valorNombreGrado) { // Cambié "updateGrado"
+    public Grado actualizarGrado(Integer id, String valorGrado, String valorNombreGrado) { // Cambié "updateGrado"
 
         //Validación
         if (valorGrado == null || valorGrado.isEmpty() || valorNombreGrado == null || valorNombreGrado.isEmpty()){
@@ -67,7 +67,7 @@ public class GradoService {
         }
     }
 
-    public boolean eliminarGrado(Long id) { // Cambié "deleteGrado"
+    public boolean eliminarGrado(Integer id) { // Cambié "deleteGrado"
         Optional<Grado> gradoExistente = gradoRepository.findById(id);
         if (gradoExistente.isPresent()) {
             Grado gradoParaEliminar = gradoExistente.get();

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface GradoRepository extends JpaRepository<Grado,Long> {
+public interface GradoRepository extends JpaRepository<Grado,Integer> {
 
     List<Grado> findByActivoTrue();  // Consulta personalizada para encontrar solo grados activos
 

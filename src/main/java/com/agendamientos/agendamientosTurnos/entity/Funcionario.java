@@ -42,17 +42,29 @@ public class Funcionario {
     private String contrasena;
 
     @Column(name = "is_active", columnDefinition = "TINYINT(1)")
-    private boolean activo = true;
+    private Integer activo = 1;
 
     @Column(name = "id_cargo")  // Nuevo campo agregado
     private Integer idCargo;    // Foreign Key a Cargo
 
+    @Column(name = "id_rol")  // Nuevo campo agregado
+    private Integer idRol;    // Foreign Key a Cargo
+
+
+    public Integer getIdRol() {
+        return idRol;
+    }
+
+    public void setIdRol(Integer idRol) {
+        this.idRol = idRol;
+    }
+
     //Relacion muchos a muchos con roles
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
-    @JoinTable(name = "funcionario_roles",
-            joinColumns = @JoinColumn(name = "id_funcionario", referencedColumnName = "id_funcionario"),
-            inverseJoinColumns = @JoinColumn(name = "id_roles", referencedColumnName = "id_roles"))
-    private Set<Roles> roles;
+    //@ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+  //  @JoinTable(name = "funcionario_roles",
+    //        joinColumns = @JoinColumn(name = "id_funcionario", referencedColumnName = "id_funcionario"),
+      //      inverseJoinColumns = @JoinColumn(name = "id_roles", referencedColumnName = "id_roles"))
+   // private Set<Roles> roles;
 
     public Integer getIdCargo() {
         return idCargo;
@@ -63,13 +75,14 @@ public class Funcionario {
     }
 
     // Método para cambiar el estado activo/inactivo
-    public void setActivo(boolean activo) {
+
+    public void setActivo(Integer activo) {
         this.activo = activo;
     }
-    public boolean getActivo() {
+
+    public Integer getActivo() {
         return activo;
     }
-
 
     public String getApellido() {
         return apellido;
@@ -107,9 +120,9 @@ public class Funcionario {
         this.idEspecialidad = idEspecialidad;
     }
 
-    public void setRoles(Set<Roles> roles) {
-        this.roles = roles;
-    }
+    //public void setRoles(Set<Roles> roles) {
+    //    this.roles = roles;
+   // }
 
     public String getContrasena() {
         return contrasena;
@@ -127,9 +140,9 @@ public class Funcionario {
         return telefono;
     }
 
-    public Set<Roles> getRoles() {
-        return roles;
-    }
+    //public Set<Roles> getRoles() {
+    //    return roles;
+   // }
 
     public Integer getIdGrado() {
         return idGrado;

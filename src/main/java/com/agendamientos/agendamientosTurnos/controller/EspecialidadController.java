@@ -25,7 +25,7 @@ public class EspecialidadController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Especialidad> obtenerEspecialidadPorId(@PathVariable Long id) { // Cambié "getEspecialidadById"
+    public ResponseEntity<Especialidad> obtenerEspecialidadPorId(@PathVariable Integer id) { // Cambié "getEspecialidadById"
         Optional<Especialidad> especialidad = especialidadService.obtenerEspecialidadPorId(id); // Cambié "getEspecialidadById"
         return especialidad.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -42,7 +42,7 @@ public class EspecialidadController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarEspecialidad(@PathVariable Long id, @RequestParam String valorEspecialidad) { // Cambié "updateEspecialidad"
+    public ResponseEntity<?> actualizarEspecialidad(@PathVariable Integer id, @RequestParam String valorEspecialidad) { // Cambié "updateEspecialidad"
         try {
             Especialidad especialidadActualizada = especialidadService.actualizarEspecialidad(id, valorEspecialidad); // Cambié "updateEspecialidad"
             if (especialidadActualizada != null) {
@@ -56,7 +56,7 @@ public class EspecialidadController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> eliminarEspecialidad(@PathVariable Long id) { // Cambié "deleteEspecialidad"
+    public ResponseEntity<String> eliminarEspecialidad(@PathVariable Integer id) { // Cambié "deleteEspecialidad"
         boolean eliminado = especialidadService.eliminarEspecialidad(id); // Cambié "deleteEspecialidad"
         if (eliminado) {
             return new ResponseEntity<>("Especialidad eliminada exitosamente", HttpStatus.OK); // Cambié el mensaje

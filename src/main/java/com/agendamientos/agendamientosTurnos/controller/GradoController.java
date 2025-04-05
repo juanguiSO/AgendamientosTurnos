@@ -25,7 +25,7 @@ public class GradoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Grado> obtenerGradoPorId(@PathVariable Long id) { // Cambié "getGradoById"
+    public ResponseEntity<Grado> obtenerGradoPorId(@PathVariable Integer id) { // Cambié "getGradoById"
         Optional<Grado> grado = gradoService.obtenerGradoPorId(id); // Cambié "getGradoById"
         return grado.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
@@ -42,7 +42,7 @@ public class GradoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarGrado(@PathVariable Long id, @RequestParam String valorGrado, @RequestParam String valorNombreGrado) { // Cambié "updateGrado"
+    public ResponseEntity<?> actualizarGrado(@PathVariable Integer id, @RequestParam String valorGrado, @RequestParam String valorNombreGrado) { // Cambié "updateGrado"
         try {
             Grado gradoActualizado = gradoService.actualizarGrado(id, valorGrado, valorNombreGrado); // Cambié "updateGrado"
             if (gradoActualizado != null) {
@@ -56,7 +56,7 @@ public class GradoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> eliminarGrado(@PathVariable Long id) { // Cambié "deleteGrado"
+    public ResponseEntity<String> eliminarGrado(@PathVariable Integer id) { // Cambié "deleteGrado"
         boolean eliminado = gradoService.eliminarGrado(id); // Cambié "deleteGrado"
         if (eliminado) {
             return new ResponseEntity<>("Grado eliminado exitosamente", HttpStatus.OK); // Cambié el mensaje
