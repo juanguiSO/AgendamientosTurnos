@@ -15,6 +15,7 @@ public class FuncionarioDTO {
     private String grado; // Nombre del grado
     private String cargo; // Nombre del cargo
     private Integer activo;
+    private String rol;
 
 
     public String getNombre() {
@@ -45,6 +46,8 @@ public class FuncionarioDTO {
         return cargo;
     }
 
+    public String getRol() { return rol; }
+
     public String getEspecialidad() {
         return especialidad;
     }
@@ -68,6 +71,8 @@ public class FuncionarioDTO {
     public void setApellido(String apellido) {
         this.apellido = apellido;
     }
+
+    public void setRol(String rol) { this.rol = rol; }
 
     public void setCedula(String cedula) {
         this.cedula = cedula;

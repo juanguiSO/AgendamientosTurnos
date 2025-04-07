@@ -81,6 +81,7 @@ public class FuncionarioService {
         dto.setGrado(getGradoNombre(funcionario.getIdGrado()));
         dto.setCargo(getCargoNombre(funcionario.getIdCargo()));
         dto.setActivo(funcionario.getActivo());
+        dto.setRol(getRolNombre(funcionario.getIdRol()));
 
 
         return dto;
@@ -109,6 +110,16 @@ public class FuncionarioService {
         return  gradoOptional.map(Grado::getGrado).orElse(null);
     }
 
+    private String getRolNombre (Integer idRol){
+        if (idRol== null){
+            return null;
+        }
+        Optional <Rol> rolOptional = rolRepository.findById(idRol);
+        return  rolOptional.map(Rol::getNombre).orElse(null);
+    }
+
+
+
     public Optional<Funcionario> getFuncionarioById(Integer id) {
         return funcionarioRepository.findById(id);
     }
@@ -124,8 +135,8 @@ public class FuncionarioService {
         return false;
     }
 
-    public Funcionario updateFuncionario(Integer id, @Valid FuncionarioCreateDTO funcionarioDTO) {
-        Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(id);
+    public Funcionario updateFuncionario(String cedula, @Valid FuncionarioCreateDTO funcionarioDTO) {
+        Optional<Funcionario> funcionarioOptional = funcionarioRepository.findByCedula(cedula);
         if (funcionarioOptional.isPresent()) {
             Funcionario existingFuncionario = funcionarioOptional.get();
 
