@@ -1,14 +1,8 @@
 package com.agendamientos.agendamientosTurnos.entity;
 
 import jakarta.persistence.*;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Getter
@@ -16,7 +10,6 @@ import lombok.*;
 @ToString
 @EqualsAndHashCode
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Entity
 @Table(name = "rol")
@@ -27,6 +20,8 @@ public class Rol {
     @Column(name = "id_Rol")
     private int idRol;
 
+    @NotBlank(message = "El nombre del rol no puede estar en blanco")
+    @Size(max = 45, message = "El nombre del rol no puede tener más de 45 caracteres")
     @Column(name = "rol", length = 45, nullable = false)
     private String nombre;
 

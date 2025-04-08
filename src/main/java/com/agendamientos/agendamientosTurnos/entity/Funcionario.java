@@ -1,6 +1,7 @@
 package com.agendamientos.agendamientosTurnos.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 import java.util.Set;
 
@@ -17,36 +18,53 @@ public class Funcionario {
     @Column(name = "id_funcionario")
     private Integer idFuncionario;
 
-    @Column(name = "apellido", length = 45, nullable = false)  //Agregado `nullable = false`
+    @NotBlank(message = "El apellido no puede estar en blanco")
+    @Size(max = 45, message = "El apellido no puede tener más de 45 caracteres")
+    @Column(name = "apellido", length = 45, nullable = false)
     private String apellido;
 
-    @Column(name = "cedula", length = 45, nullable = false, unique = true) //Agregado `nullable = false` y `unique = true`
+    @NotBlank(message = "La cédula no puede estar en blanco")
+    @Size(max = 45, message = "La cédula no puede tener más de 45 caracteres")
+    @Column(name = "cedula", length = 45, nullable = false, unique = true)
     private String cedula;
 
-    @Column(name = "correo", length = 45, nullable = false, unique = true) //Agregado `nullable = false` y `unique = true`
+    @NotBlank(message = "El correo no puede estar en blanco")
+    @Email(message = "El correo debe ser una dirección de correo electrónico válida")
+    @Size(max = 45, message = "El correo no puede tener más de 45 caracteres")
+    @Column(name = "correo", length = 45, nullable = false, unique = true)
     private String correo;
 
-    @Column(name = "nombre", length = 45, nullable = false)  //Agregado `nullable = false`
+    @NotBlank(message = "El nombre no puede estar en blanco")
+    @Size(max = 45, message = "El nombre no puede tener más de 45 caracteres")
+    @Column(name = "nombre", length = 45, nullable = false)
     private String nombre;
 
-    @Column(name = "telefono", length = 45, nullable = false)  //Agregado `nullable = false`
+    @NotBlank(message = "El teléfono no puede estar en blanco")
+    @Size(max = 45, message = "El teléfono no puede tener más de 45 caracteres")
+    @Column(name = "telefono", length = 45, nullable = false)
     private String telefono;
 
+    @NotNull(message = "El ID de especialidad no puede ser nulo")
     @Column(name = "id_especialidad")
     private Integer idEspecialidad; // Foreign Key a Especialidad
 
+    @NotNull(message = "El ID de grado no puede ser nulo")
     @Column(name = "id_grado")
     private Integer idGrado; // Foreign Key a Grado
 
-    @Column(name = "contrasena", length = 255, nullable = false) //Agregado `nullable = false`
+    @NotBlank(message = "La contraseña no puede estar en blanco")
+    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+    @Column(name = "contrasena", length = 255, nullable = false)
     private String contrasena;
 
     @Column(name = "is_active", columnDefinition = "TINYINT(1)")
     private Integer activo = 1;
 
+    @NotNull(message = "El ID de cargo no puede ser nulo")
     @Column(name = "id_cargo")  // Nuevo campo agregado
     private Integer idCargo;    // Foreign Key a Cargo
 
+    @NotNull(message = "El ID de rol no puede ser nulo")
     @Column(name = "id_rol")  // Nuevo campo agregado
     private Integer idRol;    // Foreign Key a Cargo
 
@@ -59,13 +77,6 @@ public class Funcionario {
         this.idRol = idRol;
     }
 
-    //Relacion muchos a muchos con roles
-    //@ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
-  //  @JoinTable(name = "funcionario_roles",
-    //        joinColumns = @JoinColumn(name = "id_funcionario", referencedColumnName = "id_funcionario"),
-      //      inverseJoinColumns = @JoinColumn(name = "id_roles", referencedColumnName = "id_roles"))
-   // private Set<Roles> roles;
-
     public Integer getIdCargo() {
         return idCargo;
     }
@@ -73,8 +84,6 @@ public class Funcionario {
     public void setIdCargo(Integer idCargo) {
         this.idCargo = idCargo;
     }
-
-    // Método para cambiar el estado activo/inactivo
 
     public void setActivo(Integer activo) {
         this.activo = activo;
@@ -120,10 +129,6 @@ public class Funcionario {
         this.idEspecialidad = idEspecialidad;
     }
 
-    //public void setRoles(Set<Roles> roles) {
-    //    this.roles = roles;
-   // }
-
     public String getContrasena() {
         return contrasena;
     }
@@ -139,10 +144,6 @@ public class Funcionario {
     public String getTelefono() {
         return telefono;
     }
-
-    //public Set<Roles> getRoles() {
-    //    return roles;
-   // }
 
     public Integer getIdGrado() {
         return idGrado;
@@ -163,5 +164,4 @@ public class Funcionario {
     public Integer getIdFuncionario() {
         return idFuncionario;
     }
-
 }

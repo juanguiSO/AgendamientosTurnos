@@ -2,6 +2,8 @@ package com.agendamientos.agendamientosTurnos.entity;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +20,8 @@ public class EstadoVehiculo {
     @Column(name = "id_estado_vehiculo")
     private Integer idEstadoVehiculo;
 
+    @NotBlank(message = "El estado del vehículo no puede estar en blanco")
+    @Size(max = 45, message = "El estado del vehículo no puede tener más de 45 caracteres")
     @Column(name = "estado_vehiculo", length = 45, nullable = false)
     private String estadoVehiculo;
 

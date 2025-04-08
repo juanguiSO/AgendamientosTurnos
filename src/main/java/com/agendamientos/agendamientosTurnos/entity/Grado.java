@@ -2,6 +2,8 @@ package com.agendamientos.agendamientosTurnos.entity;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,10 +21,10 @@ public class Grado {
     @Column(name = "id_grado")
     private Integer idGrado;
 
+    @NotBlank(message = "El grado no puede estar en blanco")
+    @Size(max = 45, message = "El grado no puede tener más de 45 caracteres")
     @Column(name = "grado", length = 45, nullable = false)
     private String grado;
-
-    // Eliminado el campo nombreGrado
 
     @Column(name = "is_active", columnDefinition = "TINYINT(1) DEFAULT 1")
     private boolean activo = true;
