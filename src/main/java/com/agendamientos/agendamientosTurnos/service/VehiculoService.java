@@ -103,4 +103,31 @@ public class VehiculoService {
         }
         return List.of();
     }
+
+    public Vehiculo actualizarVehiculo(Integer id, Vehiculo vehiculoActualizado) {
+        Optional<Vehiculo> vehiculoExistenteOptional = vehiculoRepository.findById(id);
+        if (vehiculoExistenteOptional.isPresent()) {
+            Vehiculo vehiculoExistente = vehiculoExistenteOptional.get();
+
+            // Actualizar los campos que se deseen permitir modificar
+            vehiculoExistente.setMarca(vehiculoActualizado.getMarca());
+            vehiculoExistente.setModelo(vehiculoActualizado.getModelo());
+            vehiculoExistente.setNumeroAsiento(vehiculoActualizado.getNumeroAsiento());
+            vehiculoExistente.setPlaca(vehiculoActualizado.getPlaca());
+
+            // Manejar la actualización del estado del vehículo si se proporciona un nuevo estado
+            if (vehiculoActualizado.getEstadoVehiculo() != null && vehiculoActualizado.getEstadoVehiculo().getIdEstadoVehiculo() != null) {
+                Optional<EstadoVehiculo> nuevoEstadoOptional = estadoVehiculoRepository.findById(vehiculoActualizado.getEstadoVehiculo().getIdEstadoVehiculo());
+                nuevoEstadoOptional.ifPresent(vehiculoExistente::setEstadoVehiculo);
+                // Si el nuevo estado no existe, podrías optar por lanzar una excepción o ignorar la actualización del estado.
+            }
+
+            vehiculoExistente.setActivo(vehiculoActualizado.isActivo()); // Permite actualizar el estado activo
+
+            return vehiculoRepository.save(vehiculoExistente);
+        } else {
+            // Opcionalmente, puedes lanzar una excepción si el vehículo con el ID dado no existe
+            return null;
+        }
+    }
 }

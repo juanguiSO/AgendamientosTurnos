@@ -85,4 +85,13 @@ public class VehiculoController {
         List<Vehiculo> vehiculos = vehiculoService.obtenerVehiculosDisponibles();
         return new ResponseEntity<>(vehiculos, HttpStatus.OK);
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<Vehiculo> actualizarVehiculo(@PathVariable Integer id, @RequestBody Vehiculo vehiculoActualizado) {
+        Vehiculo vehiculoActualizadoResult = vehiculoService.actualizarVehiculo(id, vehiculoActualizado);
+        if (vehiculoActualizadoResult != null) {
+            return new ResponseEntity<>(vehiculoActualizadoResult, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 }
