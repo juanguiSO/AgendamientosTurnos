@@ -39,18 +39,8 @@ public class VehiculoService {
     }
 
     // Nuevo método para obtener todos los vehículos (activos e inactivos)
-    public List<String> obtenerTodosLosVehiculos() {
-        return vehiculoRepository.findAll().stream()
-                .map(vehiculo -> String.format(
-                        "Marca: %s, Modelo: %s, Asientos: %d, Placa: %s, Estado: %s, Activo: %s",
-                        vehiculo.getMarca(),
-                        vehiculo.getModelo(),
-                        vehiculo.getNumeroAsiento(),
-                        vehiculo.getPlaca(),
-                        vehiculo.getEstadoVehiculo() != null ? vehiculo.getEstadoVehiculo().getEstadoVehiculo() : "Sin Estado",
-                        vehiculo.isActivo()
-                ))
-                .collect(Collectors.toList());
+    public List<Vehiculo> obtenerTodosLosVehiculos() {
+        return vehiculoRepository.findAll();
     }
 
     public Optional<Vehiculo> obtenerVehiculoPorId(Integer id) {

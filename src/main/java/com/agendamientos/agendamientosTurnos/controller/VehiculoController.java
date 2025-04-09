@@ -18,8 +18,8 @@ public class VehiculoController {
     private VehiculoService vehiculoService;
 
     @GetMapping
-    public ResponseEntity<List<String>> obtenerTodosLosVehiculos() {
-        List<String> todosVehiculosInfo = vehiculoService.obtenerTodosLosVehiculos();
+    public ResponseEntity<List<Vehiculo>> obtenerTodosLosVehiculos() {
+        List<Vehiculo> todosVehiculosInfo = vehiculoService.obtenerTodosLosVehiculos();
         return new ResponseEntity<>(todosVehiculosInfo, HttpStatus.OK);
     }
 
