@@ -52,7 +52,7 @@ public class Funcionario {
     @Column(name = "id_grado")
     private Integer idGrado; // Foreign Key a Grado
 
-    @NotBlank(message = "La contraseña no puede estar en blanco")
+
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     @Column(name = "contrasena", length = 255, nullable = false)
     private String contrasena;

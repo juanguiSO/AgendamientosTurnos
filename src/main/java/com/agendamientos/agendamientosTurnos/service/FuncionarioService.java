@@ -3,6 +3,8 @@ import com.agendamientos.agendamientosTurnos.dto.FuncionarioCreateDTO;
 import com.agendamientos.agendamientosTurnos.dto.FuncionarioDTO;
 import com.agendamientos.agendamientosTurnos.entity.*;
 import com.agendamientos.agendamientosTurnos.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,8 +31,10 @@ public class FuncionarioService {
 
     @Autowired
     private CargoRepository cargoRepository;
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
-
+    private static final Logger logger = LoggerFactory.getLogger(FuncionarioService.class);
     @Transactional
     public Funcionario createFuncionario(@Valid FuncionarioCreateDTO funcionarioDTO) {
         // Validar la existencia del rol
@@ -135,10 +139,16 @@ public class FuncionarioService {
         return false;
     }
 
+    @Transactional
     public Funcionario updateFuncionario(String cedula, @Valid FuncionarioCreateDTO funcionarioDTO) {
+        logger.info("Iniciando la actualización del funcionario con cédula: {}", cedula);
+        logger.debug("Datos del DTO recibidos: {}", funcionarioDTO);
+
         Optional<Funcionario> funcionarioOptional = funcionarioRepository.findByCedula(cedula);
         if (funcionarioOptional.isPresent()) {
             Funcionario existingFuncionario = funcionarioOptional.get();
+            String contrasenaOriginal = existingFuncionario.getContrasena(); // Guardar la contraseña original
+            Integer rolOriginalId = existingFuncionario.getIdRol(); // Guardar el rol original
 
             // Actualizar los campos con los valores del DTO
             existingFuncionario.setApellido(funcionarioDTO.getApellido());
@@ -152,17 +162,72 @@ public class FuncionarioService {
             existingFuncionario.setIdRol(funcionarioDTO.getIdRol());
             existingFuncionario.setIdCargo(funcionarioDTO.getIdCargo());
 
-            // Actualizar la contraseña si se proporciona
-            if (funcionarioDTO.getContrasena() != null && !funcionarioDTO.getContrasena().isEmpty()) {
-                String contrasenaHasheada = hashContrasena(funcionarioDTO.getContrasena());
-                existingFuncionario.setContrasena(contrasenaHasheada);
+            logger.debug("Campos del funcionario actualizados con los datos del DTO: {}", existingFuncionario);
+            logger.debug("Rol original del funcionario: {}", rolOriginalId);
+            logger.debug("Nuevo rol proporcionado en el DTO: {}", funcionarioDTO.getIdRol());
+            logger.debug("Contraseña proporcionada en el DTO: {}", funcionarioDTO.getContrasena());
+
+            // Lógica para la contraseña basada en el rol
+            if (funcionarioDTO.getIdRol() != null) {
+                logger.debug("Se proporcionó un nuevo idRol: {}", funcionarioDTO.getIdRol());
+                // Si el rol que se está asignando es de administrador (idRol = 2)
+                if (funcionarioDTO.getIdRol().equals(2)) {
+                    logger.debug("El nuevo rol es Administrador.");
+                    // Verificar si la contraseña actual es null o vacía y asignar la contraseña por defecto
+                    if (existingFuncionario.getContrasena() == null || existingFuncionario.getContrasena().isEmpty()) {
+                        String contrasenaPorDefecto = hashContrasena("defensoria");
+                        existingFuncionario.setContrasena(contrasenaPorDefecto);
+                        logger.debug("Contraseña por defecto asignada al administrador (contraseña anterior nula o vacía).");
+                    } else if (funcionarioDTO.getContrasena() != null && !funcionarioDTO.getContrasena().isEmpty()) {
+                        // Si se proporciona una nueva contraseña, hashearla
+                        String contrasenaHasheada = hashContrasena(funcionarioDTO.getContrasena());
+                        existingFuncionario.setContrasena(contrasenaHasheada);
+                        logger.debug("Nueva contraseña hasheada asignada al administrador.");
+                    } else {
+                        logger.debug("Se mantiene la contraseña existente del administrador.");
+                    }
+                } else if (funcionarioDTO.getIdRol().equals(1)) { // Si el rol que se está asignando es de usuario (idRol = 1)
+                    logger.debug("El nuevo rol es Usuario. Estableciendo la contraseña a null.");
+                    existingFuncionario.setContrasena(null);
+                } else { // Para cualquier otro rol diferente de administrador o usuario
+                    logger.debug("El nuevo rol no es Administrador ni Usuario (idRol: {}).", funcionarioDTO.getIdRol());
+                    // Actualizar la contraseña solo si se proporciona una nueva
+                    if (funcionarioDTO.getContrasena() != null && !funcionarioDTO.getContrasena().isEmpty()) {
+                        String contrasenaHasheada = hashContrasena(funcionarioDTO.getContrasena());
+                        existingFuncionario.setContrasena(contrasenaHasheada);
+                        logger.debug("Nueva contraseña hasheada asignada para otro rol.");
+                    } else {
+                        logger.debug("No se proporcionó nueva contraseña, manteniendo la existente para otro rol.");
+                        existingFuncionario.setContrasena(contrasenaOriginal);
+                    }
+                }
+            } else {
+                logger.debug("No se proporcionó un nuevo idRol en el DTO.");
+                // Si no se proporciona un nuevo rol en el DTO, mantener la lógica original de la contraseña
+                if (funcionarioDTO.getContrasena() != null && !funcionarioDTO.getContrasena().isEmpty()) {
+                    String contrasenaHasheada = hashContrasena(funcionarioDTO.getContrasena());
+                    existingFuncionario.setContrasena(contrasenaHasheada);
+                    logger.debug("Nueva contraseña hasheada asignada.");
+                } else {
+                    logger.debug("No se proporcionó nueva contraseña, manteniendo la existente.");
+                    existingFuncionario.setContrasena(contrasenaOriginal);
+                }
             }
 
-            return funcionarioRepository.save(existingFuncionario);
-        }
-        return null; // O lanzar una excepción indicando que el funcionario no existe
-    }
+            try {
+                Funcionario funcionarioActualizado = funcionarioRepository.save(existingFuncionario);
+                logger.info("Funcionario con cédula {} actualizado exitosamente: {}", cedula, funcionarioActualizado);
+                return funcionarioActualizado;
+            } catch (Exception e) {
+                logger.error("Error al guardar la actualización del funcionario con cédula {}: {}", cedula, e.getMessage(), e);
+                return null;
+            }
 
+        } else {
+            logger.warn("No se encontró ningún funcionario con la cédula: {}", cedula);
+            return null; // O lanzar una excepción indicando que el funcionario no existe
+        }
+    }
     public boolean deleteFuncionario(Integer id) {
         Optional<Funcionario> funcionario = funcionarioRepository.findById(id);
         if (funcionario.isPresent()) {

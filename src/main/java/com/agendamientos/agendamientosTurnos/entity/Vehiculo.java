@@ -29,7 +29,7 @@ public class Vehiculo {
     private String modelo;
 
     @NotNull(message = "El número de asientos no puede ser nulo")
-    @Min(value = 1, message = "El número de asientos debe ser al menos 1")
+    @Pattern(regexp = "^(2|4)$", message = "El número de asientos debe ser 2 o 4") // <--- Nueva validación
     @Column(name = "numero_asiento")
     private Integer numeroAsiento;
 
