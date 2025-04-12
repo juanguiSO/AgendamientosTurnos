@@ -1,23 +1,33 @@
 package com.agendamientos.agendamientosTurnos.dto;
 
 public class CasoDTO {
+
     private String codigoCaso;
     private String delito;
     private String nombreDefensorPublico;
     private String nombreUsuarioVisitado;
-    private String departamentos;
-    private String municipios;
+    private String nombreDepartamento;
+    private String nombreMunicipio;
     private Boolean activo;
 
-    public CasoDTO(String codigoCaso, String delito, String nombreDefensorPublico, String nombreUsuarioVisitado, String departamentos, String municipios, Boolean activo) {
+    // Constructor por defecto (necesario para algunas frameworks)
+    public CasoDTO() {
+    }
+
+    // Constructor con todos los campos
+    public CasoDTO(String codigoCaso, String delito, String nombreDefensorPublico,
+                   String nombreUsuarioVisitado, String nombreDepartamento, String nombreMunicipio, Boolean activo) {
+
         this.codigoCaso = codigoCaso;
         this.delito = delito;
         this.nombreDefensorPublico = nombreDefensorPublico;
         this.nombreUsuarioVisitado = nombreUsuarioVisitado;
-        this.departamentos = departamentos;
-        this.municipios = municipios;
+        this.nombreDepartamento = nombreDepartamento;
+        this.nombreMunicipio = nombreMunicipio;
         this.activo = activo;
     }
+
+
 
     public String getCodigoCaso() {
         return codigoCaso;
@@ -51,20 +61,20 @@ public class CasoDTO {
         this.nombreUsuarioVisitado = nombreUsuarioVisitado;
     }
 
-    public String getDepartamentos() {
-        return departamentos;
+    public String getNombreDepartamento() {
+        return nombreDepartamento;
     }
 
-    public void setDepartamentos(String departamentos) {
-        this.departamentos = departamentos;
+    public void setNombreDepartamento(String nombreDepartamento) {
+        this.nombreDepartamento = nombreDepartamento;
     }
 
-    public String getMunicipios() {
-        return municipios;
+    public String getNombreMunicipio() {
+        return nombreMunicipio;
     }
 
-    public void setMunicipios(String municipios) {
-        this.municipios = municipios;
+    public void setNombreMunicipio(String nombreMunicipio) {
+        this.nombreMunicipio = nombreMunicipio;
     }
 
     public Boolean getActivo() {

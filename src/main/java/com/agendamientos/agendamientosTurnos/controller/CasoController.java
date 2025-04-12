@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
+import com.agendamientos.agendamientosTurnos.dto.CasoDTO;
 import com.agendamientos.agendamientosTurnos.entity.Caso;
 import com.agendamientos.agendamientosTurnos.service.CasoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +22,6 @@ public class CasoController {
         this.casoService = casoService;
     }
 
-    @GetMapping("/activos")
-    public ResponseEntity<List<String>> obtenerTodosLosCasosActivosConNombres() {
-        List<String> casosInfo = casoService.obtenerTodosLosCasosActivosConNombres();
-        return new ResponseEntity<>(casosInfo, HttpStatus.OK);
-    }
 
 
 
@@ -42,8 +38,8 @@ public class CasoController {
     }
 
     @GetMapping("/todos")
-    public ResponseEntity<List<String>> obtenerTodosLosCasosConNombres() {
-        List<String> casosInfo = casoService.obtenerTodosLosCasosConNombres();
+    public ResponseEntity<List<CasoDTO>> obtenerTodosLosCasosConNombres() {
+        List<CasoDTO> casosInfo = casoService.obtenerTodosLosCasosConNombres();
         return new ResponseEntity<>(casosInfo, HttpStatus.OK);
     }
 }
