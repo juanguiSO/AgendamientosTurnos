@@ -29,7 +29,8 @@ public class Vehiculo {
     private String modelo;
 
     @NotNull(message = "El número de asientos no puede ser nulo")
-    @Pattern(regexp = "^(2|4)$", message = "El número de asientos debe ser 2 o 4") // <--- Nueva validación
+    @Min(value = 2, message = "El número de asiento debe ser como mínimo 2")
+    @Max(value = 4, message = "El número de asiento debe ser como máximo 4")
     @Column(name = "numero_asiento")
     private Integer numeroAsiento;
 

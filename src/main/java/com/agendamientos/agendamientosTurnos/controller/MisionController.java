@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
+import com.agendamientos.agendamientosTurnos.dto.MisionDTO;
 import com.agendamientos.agendamientosTurnos.entity.Mision;
 import com.agendamientos.agendamientosTurnos.service.MisionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +31,8 @@ public class MisionController {
 
     // Modifica el endpoint para listar todas las misiones con la información deseada
     @GetMapping("/todos")
-    public ResponseEntity<List<String>> obtenerTodasLasMisionesConInfo() {
-        List<String> misionesInfo = misionService.obtenerTodasLasMisionesConInfo();
+    public ResponseEntity<List<MisionDTO>> obtenerTodasLasMisionesConInfo() {
+        List<MisionDTO> misionesInfo = misionService.obtenerTodasLasMisionesDTO();
         return new ResponseEntity<>(misionesInfo, HttpStatus.OK);
     }
 

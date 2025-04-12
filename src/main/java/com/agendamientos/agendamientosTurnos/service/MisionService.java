@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.service;
 
+import com.agendamientos.agendamientosTurnos.dto.MisionDTO;
 import com.agendamientos.agendamientosTurnos.entity.Mision;
 import com.agendamientos.agendamientosTurnos.repository.MisionRepository;
 import jakarta.transaction.Transactional;
@@ -70,11 +71,18 @@ public class MisionService {
                 });
     }
 
-    public List<String> obtenerTodasLasMisionesConInfo() {
+    public List<MisionDTO> obtenerTodasLasMisionesDTO() {
         return misionRepository.findAll().stream()
-                .map(this::formatearMisionConInfo)
+                .map(m -> new MisionDTO(
+                        m.getNumeroMision(),
+                        m.getFuncionario() != null ? m.getFuncionario().getNombre() : "Sin Funcionario",
+                        m.getFuncionario() != null ? m.getFuncionario().getApellido() : "Sin Funcionario",
+                        m.getActividades(),
+                        m.getCaso() != null ? m.getCaso().getCodigoCaso() : "Sin Caso",
+                        m.getActivo()))
                 .collect(Collectors.toList());
     }
+
 
     private String formatearMisionConInfo(Mision mision) {
         String nombreFuncionario = "Sin Funcionario";
