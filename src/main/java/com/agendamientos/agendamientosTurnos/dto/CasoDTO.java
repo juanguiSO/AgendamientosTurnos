@@ -2,6 +2,7 @@ package com.agendamientos.agendamientosTurnos.dto;
 
 public class CasoDTO {
 
+    private Integer idCaso;
     private String codigoCaso;
     private String delito;
     private String nombreDefensorPublico;
@@ -15,9 +16,10 @@ public class CasoDTO {
     }
 
     // Constructor con todos los campos
-    public CasoDTO(String codigoCaso, String delito, String nombreDefensorPublico,
+    public CasoDTO(Integer idCaso, String codigoCaso, String delito, String nombreDefensorPublico,
                    String nombreUsuarioVisitado, String nombreDepartamento, String nombreMunicipio, Boolean activo) {
 
+        this.idCaso =idCaso;
         this.codigoCaso = codigoCaso;
         this.delito = delito;
         this.nombreDefensorPublico = nombreDefensorPublico;
@@ -28,6 +30,13 @@ public class CasoDTO {
     }
 
 
+    public Integer getIdCaso() {
+        return idCaso;
+    }
+
+    public void setIdCaso(Integer idCaso) {
+        this.idCaso = idCaso;
+    }
 
     public String getCodigoCaso() {
         return codigoCaso;

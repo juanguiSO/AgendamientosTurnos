@@ -58,10 +58,14 @@ public class MisionService {
         return misionRepository.save(mision);
     }
 
+    @Transactional
     public void eliminarMision(Integer numeroMision) {
-        misionRepository.deleteById(numeroMision);
+        misionRepository.findByNumeroMision(numeroMision)
+                .ifPresent(mision -> {
+                    mision.setActivo(false);
+                    misionRepository.save(mision);
+                });
     }
-
     @Transactional
     public void marcarMisionComoInactiva(Integer numeroMision) {
         misionRepository.findByNumeroMision(numeroMision)

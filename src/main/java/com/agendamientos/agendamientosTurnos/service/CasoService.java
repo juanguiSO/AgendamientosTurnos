@@ -73,6 +73,7 @@ public class CasoService {
 
                     return new CasoDTO(
 
+                            caso.getIdCaso(),
                             caso.getCodigoCaso(),
                             caso.getDelito(),
                             caso.getNombreDefensorPublico(),
@@ -108,6 +109,7 @@ public class CasoService {
 
         return new CasoDTO(
 
+                caso.getIdCaso(),
                 caso.getCodigoCaso(),
                 caso.getDelito(),
                 caso.getNombreDefensorPublico(),
