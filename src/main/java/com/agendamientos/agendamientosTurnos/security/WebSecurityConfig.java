@@ -1,6 +1,5 @@
 package com.agendamientos.agendamientosTurnos.security;
 
-
 import com.agendamientos.agendamientosTurnos.service.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -13,46 +12,62 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 @Configuration
 public class WebSecurityConfig {
+
     @Autowired
     CustomUserDetailsService userDetailsService;
+
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
+
     @Bean
     public AuthTokenFilter authenticationJwtTokenFilter() {
         return new AuthTokenFilter();
     }
+
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration authenticationConfiguration
     ) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+       return authenticationConfiguration.getAuthenticationManager();
     }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        // Updated configuration for Spring Security 6.x
         http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF
-                .cors(cors -> cors.configure(http)) // Disable CORS (or configure if needed)
+                .csrf(csrf -> csrf.disable()) // Deshabilitar CSRF
+                .cors(cors -> cors.configure(http)) // Configurar CORS si es necesario
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling.authenticationEntryPoint(unauthorizedHandler)
                 )
                 .sessionManagement(sessionManagement ->
-                        sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                        sessionManagement
+                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Configuración sin estado
+                                .maximumSessions(1) // Número máximo de sesiones (opcional)
+                                .expiredUrl("/login?expired=true") // Redirige en caso de expiración
                 )
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                .requestMatchers("/api/auth/**", "/api/test/all").permitAll() // Use 'requestMatchers' instead of 'antMatchers'
-                                .requestMatchers("OPTIONS","/**").permitAll()
+                                .requestMatchers("/api/auth/**", "/api/test/all").permitAll()
                                 .anyRequest().authenticated()
+                )
+                .logout(logout ->
+                        logout
+                                .logoutUrl("/logout") // URL de cierre de sesión
+                                .invalidateHttpSession(true) // Invalidar sesión HTTP
+                                .deleteCookies("JSESSIONID") // Borrar cookies al cerrar sesión
                 );
-        // Add the JWT Token filter before the UsernamePasswordAuthenticationFilter
+
+        // Agregar el filtro JWT antes del UsernamePasswordAuthenticationFilter
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }

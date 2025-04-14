@@ -45,6 +45,26 @@ public class Caso {
         this.activo = activo;
     }
 
+    public void setIdCaso(Integer idCaso) {
+        this.idCaso = idCaso;
+    }
+
+    public void setCodigoCaso(String codigoCaso) {
+        this.codigoCaso = codigoCaso;
+    }
+
+    public void setDelito(String delito) {
+        this.delito = delito;
+    }
+
+    public void setNombreUsuarioVisitado(String nombreUsuarioVisitado) {
+        this.nombreUsuarioVisitado = nombreUsuarioVisitado;
+    }
+
+    public void setNombreDefensorPublico(String nombreDefensorPublico) {
+        this.nombreDefensorPublico = nombreDefensorPublico;
+    }
+
     public Integer getIdDepartamentos() {
         return idDepartamentos;
     }
@@ -79,5 +99,11 @@ public class Caso {
 
     public Boolean getActivo() {
         return activo;
+    }
+
+    public void setIdMunicipio(Municipio municipio) {
+    }
+
+    public void setIdDepartamentos(Departamentos departamentos) {
     }
 }

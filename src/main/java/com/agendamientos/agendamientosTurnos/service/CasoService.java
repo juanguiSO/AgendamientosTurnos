@@ -163,4 +163,50 @@ public class CasoService {
     private DepartamentosRepository departamentosRepository() {
         return departamentosRepository;
     }
+
+    @Transactional
+    public Optional<CasoDTO> actualizarCaso(Integer idCaso, CasoDTO casoDTO) {
+        Optional<Caso> casoExistenteOptional = casoRepository.findById(idCaso);
+        if (casoExistenteOptional.isPresent()) {
+            Caso casoExistente = casoExistenteOptional.get();
+
+            if (casoDTO.getCodigoCaso() != null) {
+                casoExistente.setCodigoCaso(casoDTO.getCodigoCaso());
+            }
+            if (casoDTO.getDelito() != null) {
+                casoExistente.setDelito(casoDTO.getDelito());
+            }
+            if (casoDTO.getNombreDefensorPublico() != null) {
+                casoExistente.setNombreDefensorPublico(casoDTO.getNombreDefensorPublico());
+            }
+            if (casoDTO.getNombreUsuarioVisitado() != null) {
+                casoExistente.setNombreUsuarioVisitado(casoDTO.getNombreUsuarioVisitado());
+            }
+            if (casoDTO.getActivo() != null) {
+                casoExistente.setActivo(casoDTO.getActivo());
+            }
+
+            // Buscar y establecer el ID del Municipio por nombre
+            if (casoDTO.getNombreMunicipio() != null && !casoDTO.getNombreMunicipio().isEmpty() && !casoDTO.getNombreMunicipio().equals("Sin Municipio")) {
+                municipioRepository.findByMunicipio(casoDTO.getNombreMunicipio())
+                        .ifPresent(casoExistente::setIdMunicipio);
+            } else if (casoDTO.getNombreMunicipio() != null && (casoDTO.getNombreMunicipio().isEmpty() || casoDTO.getNombreMunicipio().equals("Sin Municipio"))) {
+                casoExistente.setIdMunicipio(null); // Desvincular municipio si se envía vacío o "Sin Municipio"
+            }
+
+            // Buscar y establecer el ID del Departamento por nombre
+            if (casoDTO.getNombreDepartamento() != null && !casoDTO.getNombreDepartamento().isEmpty() && !casoDTO.getNombreDepartamento().equals("Sin Departamento")) {
+                departamentosRepository.findByDepartamento(casoDTO.getNombreDepartamento())
+                        .ifPresent(casoExistente::setIdDepartamentos);
+            } else if (casoDTO.getNombreDepartamento() != null && (casoDTO.getNombreDepartamento().isEmpty() || casoDTO.getNombreDepartamento().equals("Sin Departamento"))) {
+                casoExistente.setIdDepartamentos(null); // Desvincular departamento si se envía vacío o "Sin Departamento"
+            }
+
+            Caso casoActualizado = casoRepository.save(casoExistente);
+            return Optional.of(convertToCasoDTO(casoActualizado));
+        }
+        return Optional.empty();
+    }
+
+
 }

@@ -1,15 +1,17 @@
 package com.agendamientos.agendamientosTurnos.dto;
 
-import lombok.Data;
-
-@Data
 public class MisionDTO {
-        private Integer numeroMision;
-        private String nombreFuncionario;
-        private String apellidoFuncionario;
-        private String actividades;
-        private String numeroCaso;
-        private Boolean activo;
+    private Integer numeroMision;
+    private Integer idFuncionario; // Cambiado a ID
+    private String nombreFuncionario; // Puedes mantenerlo para mostrar, pero usa idFuncionario para la relación
+    private String apellidoFuncionario; // Puedes mantenerlo para mostrar
+    private String actividades;
+    private String numeroCaso;
+    private Boolean activo;
+
+    // Constructor, getters y setters
+    public MisionDTO() {
+    }
 
     public MisionDTO(Integer numeroMision, String nombreFuncionario, String apellidoFuncionario, String actividades, String numeroCaso, Boolean activo) {
         this.numeroMision = numeroMision;
@@ -20,12 +22,21 @@ public class MisionDTO {
         this.activo = activo;
     }
 
+    // Getters y setters para todos los campos, incluyendo idFuncionario
     public Integer getNumeroMision() {
         return numeroMision;
     }
 
     public void setNumeroMision(Integer numeroMision) {
         this.numeroMision = numeroMision;
+    }
+
+    public Integer getIdFuncionario() {
+        return idFuncionario;
+    }
+
+    public void setIdFuncionario(Integer idFuncionario) {
+        this.idFuncionario = idFuncionario;
     }
 
     public String getNombreFuncionario() {
@@ -39,9 +50,11 @@ public class MisionDTO {
     public String getApellidoFuncionario() {
         return apellidoFuncionario;
     }
+
     public void setApellidoFuncionario(String apellidoFuncionario) {
         this.apellidoFuncionario = apellidoFuncionario;
     }
+
     public String getActividades() {
         return actividades;
     }

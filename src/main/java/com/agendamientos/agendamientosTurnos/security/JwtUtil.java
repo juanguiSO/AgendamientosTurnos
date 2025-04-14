@@ -62,4 +62,24 @@ public class JwtUtil {
         }
         return false;
     }
+    public String refreshJwtToken(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            // Generar un nuevo token con las mismas claims
+            return Jwts.builder()
+                    .setSubject(claims.getSubject())
+                    .setIssuedAt(new Date())
+                    .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                    .signWith(key, SignatureAlgorithm.HS256)
+                    .compact();
+        } catch (ExpiredJwtException e) {
+            System.out.println("Token expirado, no se puede renovar: " + e.getMessage());
+            return null;
+        }
+    }
 }

@@ -34,8 +34,20 @@ public class Mision {
         this.activo = activo;
     }
 
+    public void setActividades(String actividades) {
+        this.actividades = actividades;
+    }
+
     public Funcionario getFuncionario() {
         return funcionario;
+    }
+
+    public void setFuncionario(Funcionario funcionario) {
+        this.funcionario = funcionario;
+    }
+
+    public void setCaso(Caso caso) {
+        this.caso = caso;
     }
 
     public Integer getNumeroMision() {

@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface CasoRepository extends JpaRepository<Caso, Integer> {
 
     List<Caso> findByActivoTrue();
-
+    Optional<Caso> findByCodigoCaso(String codigoCaso);
     // Asegúrate de tener ESTE método:
     Optional<Caso> findByIdCasoAndActivoTrue(Integer idCaso);
 
