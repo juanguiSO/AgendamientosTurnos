@@ -92,4 +92,12 @@ public class MisionController {
         misionService.marcarMisionComoInactiva(numeroMision);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
+    @PutMapping("/{numeroMision}")
+    public ResponseEntity<?> actualizarMision(
+            @PathVariable Integer numeroMision,
+            @RequestBody MisionDTO misionDTO) {
+        Optional<Mision> misionActualizada = misionService.actualizarMision(numeroMision, misionDTO);
+        return misionActualizada.map(mision -> new ResponseEntity<>(mision, HttpStatus.OK))
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
 }

@@ -51,7 +51,7 @@ public class WebSecurityConfig {
                         sessionManagement
                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Configuración sin estado
                                 .maximumSessions(1) // Número máximo de sesiones (opcional)
-                                .expiredUrl("/login?expired=true") // Redirige en caso de expiración
+                                .expiredUrl("/login") // Redirige en caso de expiración
                 )
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
