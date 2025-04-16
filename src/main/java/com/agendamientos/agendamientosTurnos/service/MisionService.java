@@ -1,6 +1,7 @@
 package com.agendamientos.agendamientosTurnos.service;
 
 import com.agendamientos.agendamientosTurnos.dto.MisionDTO;
+import com.agendamientos.agendamientosTurnos.dto.ReporteFuncionarioCasosDTO;
 import com.agendamientos.agendamientosTurnos.entity.Caso;
 import com.agendamientos.agendamientosTurnos.entity.Funcionario;
 import com.agendamientos.agendamientosTurnos.entity.Mision;
@@ -11,8 +12,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,6 +74,7 @@ public class MisionService {
                     misionRepository.save(mision);
                 });
     }
+
     @Transactional
     public void marcarMisionComoInactiva(Integer numeroMision) {
         misionRepository.findByNumeroMision(numeroMision)
@@ -116,33 +117,70 @@ public class MisionService {
                 mision.getActivo()
         );
     }
-        @Transactional
-        public Optional<Mision> actualizarMision(Integer numeroMision, MisionDTO misionDTO) {
-            Optional<Mision> misionExistenteOptional = misionRepository.findByNumeroMision(numeroMision);
-            if (misionExistenteOptional.isPresent()) {
-                Mision misionExistente = misionExistenteOptional.get();
 
-                if (misionDTO.getActividades() != null) {
-                    misionExistente.setActividades(misionDTO.getActividades());
-                }
-                if (misionDTO.getActivo() != null) {
-                    misionExistente.setActivo(misionDTO.getActivo());
-                }
+    @Transactional
+    public Optional<Mision> actualizarMision(Integer numeroMision, MisionDTO misionDTO) {
+        Optional<Mision> misionExistenteOptional = misionRepository.findByNumeroMision(numeroMision);
+        if (misionExistenteOptional.isPresent()) {
+            Mision misionExistente = misionExistenteOptional.get();
 
-                // Manejar la relación con Funcionario por ID
-                if (misionDTO.getIdFuncionario() != null) {
-                    Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(misionDTO.getIdFuncionario());
-                    funcionarioOptional.ifPresent(misionExistente::setFuncionario);
-                }
-
-                if (misionDTO.getNumeroCaso() != null && !misionDTO.getNumeroCaso().isEmpty()) {
-                    Optional<Caso> casoOptional = casoRepository.findByCodigoCaso(misionDTO.getNumeroCaso());
-                    casoOptional.ifPresent(misionExistente::setCaso);
-                }
-
-                return Optional.of(misionRepository.save(misionExistente));
+            if (misionDTO.getActividades() != null) {
+                misionExistente.setActividades(misionDTO.getActividades());
             }
-            return Optional.empty();
+            if (misionDTO.getActivo() != null) {
+                misionExistente.setActivo(misionDTO.getActivo());
+            }
+
+            // Manejar la relación con Funcionario por ID
+            if (misionDTO.getIdFuncionario() != null) {
+                Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(misionDTO.getIdFuncionario());
+                funcionarioOptional.ifPresent(misionExistente::setFuncionario);
+            }
+
+            if (misionDTO.getNumeroCaso() != null && !misionDTO.getNumeroCaso().isEmpty()) {
+                Optional<Caso> casoOptional = casoRepository.findByCodigoCaso(misionDTO.getNumeroCaso());
+                casoOptional.ifPresent(misionExistente::setCaso);
+            }
+
+            return Optional.of(misionRepository.save(misionExistente));
         }
+        return Optional.empty();
     }
+
+    public List<Mision> obtenerMisionesPorFuncionario(Funcionario funcionario) {
+        return misionRepository.findByFuncionario(funcionario);
+    }
+
+    // O si solo tienes el ID del funcionario:
+    public List<Mision> obtenerMisionesPorFuncionarioId(Integer funcionarioId) {
+        Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(funcionarioId);
+        return funcionarioOptional.map(misionRepository::findByFuncionario).orElse(Collections.emptyList());
+    }
+    public List<ReporteFuncionarioCasosDTO> obtenerReporteFuncionariosConCasos() {
+        List<Mision> todasLasMisiones = misionRepository.findAll();
+
+        Map<Funcionario, Set<String>> mapaFuncionarioCasos = new HashMap<>();
+
+        for (Mision mision : todasLasMisiones) {
+            Funcionario funcionario = mision.getFuncionario();
+            Caso caso = mision.getCaso();
+
+            if (funcionario != null && caso != null) {
+                mapaFuncionarioCasos
+                        .computeIfAbsent(funcionario, f -> new HashSet<>())
+                        .add(caso.getCodigoCaso());
+            }
+        }
+
+        return mapaFuncionarioCasos.entrySet().stream()
+                .map(entry -> {
+                    Funcionario f = entry.getKey();
+                    List<String> casos = new ArrayList<>(entry.getValue());
+                    return new ReporteFuncionarioCasosDTO(f.getNombre(), f.getApellido(), casos);
+                })
+                .collect(Collectors.toList());
+    }
+
+
+}
 

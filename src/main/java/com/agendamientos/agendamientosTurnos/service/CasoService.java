@@ -3,14 +3,20 @@ package com.agendamientos.agendamientosTurnos.service;
 import com.agendamientos.agendamientosTurnos.dto.CasoDTO;
 import com.agendamientos.agendamientosTurnos.entity.Caso;
 import com.agendamientos.agendamientosTurnos.entity.Departamentos;
+import com.agendamientos.agendamientosTurnos.entity.Funcionario;
 import com.agendamientos.agendamientosTurnos.entity.Municipio;
+import com.agendamientos.agendamientosTurnos.entity.Mision; // Import Mision
 import com.agendamientos.agendamientosTurnos.repository.CasoRepository;
 import com.agendamientos.agendamientosTurnos.repository.DepartamentosRepository;
+import com.agendamientos.agendamientosTurnos.repository.FuncionarioRepository;
 import com.agendamientos.agendamientosTurnos.repository.MunicipioRepository;
+import com.agendamientos.agendamientosTurnos.repository.MisionRepository; // Import MisionRepository
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,24 +27,52 @@ public class CasoService {
     private final CasoRepository casoRepository;
     private final MunicipioRepository municipioRepository;
     private final DepartamentosRepository departamentosRepository;
+    private final FuncionarioRepository funcionarioRepository;
+    private final MisionRepository misionRepository; // Inject MisionRepository
 
     @Autowired
-    public CasoService(CasoRepository casoRepository, MunicipioRepository municipioRepository, DepartamentosRepository departamentosRepository) {
+    public CasoService(CasoRepository casoRepository, MunicipioRepository municipioRepository, DepartamentosRepository departamentosRepository, FuncionarioRepository funcionarioRepository, MisionRepository misionRepository) {
         this.casoRepository = casoRepository;
         this.municipioRepository = municipioRepository;
         this.departamentosRepository = departamentosRepository;
+        this.funcionarioRepository = funcionarioRepository;
+        this.misionRepository = misionRepository;
     }
 
-    public List<Caso> obtenerTodosLosCasosActivos() {
-        return casoRepository.findByActivoTrue();
+    public List<Caso> obtenerCasosPorFuncionarioATravesDeMisiones(Integer funcionarioId) {
+        Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(funcionarioId);
+        if (funcionarioOptional.isPresent()) {
+            Funcionario funcionario = funcionarioOptional.get();
+            List<Mision> misionesDelFuncionario = misionRepository.findByFuncionario(funcionario);
+            List<Caso> casosAsignados = new ArrayList<>();
+            for (Mision mision : misionesDelFuncionario) {
+                if (mision.getCaso() != null) {
+                    casosAsignados.add(mision.getCaso());
+                }
+            }
+            return casosAsignados.stream().distinct().collect(Collectors.toList()); // Evitar duplicados
+        }
+        return Collections.emptyList();
     }
 
     public Optional<Caso> obtenerCasoPorId(Integer idCaso) {
         return casoRepository.findById(idCaso);
     }
 
-    public Caso guardarCaso(Caso caso) {
+    public Caso guardarCaso(CasoDTO casoDTO) {
+        Caso caso = new Caso();
         caso.setActivo(true);
+        caso.setCodigoCaso(casoDTO.getCodigoCaso());
+        caso.setDelito(casoDTO.getDelito());
+        caso.setNombreDefensorPublico(casoDTO.getNombreDefensorPublico());
+        caso.setNombreUsuarioVisitado(casoDTO.getNombreUsuarioVisitado());
+
+        // Buscar y establecer las entidades Municipio y Departamentos
+        municipioRepository.findByMunicipio(casoDTO.getNombreMunicipio())
+                .ifPresent(caso::setMunicipio);
+        departamentosRepository.findByDepartamento(casoDTO.getNombreDepartamento())
+                .ifPresent(caso::setDepartamentos);
+
         return casoRepository.save(caso);
     }
 
@@ -55,60 +89,23 @@ public class CasoService {
         return casoRepository.findAll();
     }
 
-    // Nuevo método para obtener todos los casos como DTOs con nombres de municipio y departamento
     public List<CasoDTO> obtenerTodosLosCasosConNombres() {
         return casoRepository.findAll().stream()
-                .map(caso -> {
-                    String nombreMunicipio = "Sin Municipio";
-                    if (caso.getIdMunicipio() != null) {
-                        Optional<Municipio> municipioOptional = municipioRepository.findById(caso.getIdMunicipio());
-                        nombreMunicipio = municipioOptional.map(Municipio::getMunicipio).orElse("Sin Municipio");
-                    }
-
-                    String nombreDepartamento = "Sin Departamento";
-                    if (caso.getIdDepartamentos() != null) {
-                        Optional<Departamentos> departamentosOptional = departamentosRepository().findById(caso.getIdDepartamentos());
-                        nombreDepartamento = departamentosOptional.map(Departamentos::getDepartamento).orElse("Sin Departamento");
-                    }
-
-                    return new CasoDTO(
-
-                            caso.getIdCaso(),
-                            caso.getCodigoCaso(),
-                            caso.getDelito(),
-                            caso.getNombreDefensorPublico(),
-                            caso.getNombreUsuarioVisitado(),
-                            nombreDepartamento,
-                            nombreMunicipio,
-                            caso.getActivo()
-                    );
-                })
+                .map(this::convertToCasoDTO)
                 .collect(Collectors.toList());
     }
 
-    // Nuevo método para obtener casos activos como DTOs con nombres de municipio y departamento
     public List<CasoDTO> obtenerTodosLosCasosActivosConNombresDTO() {
         return casoRepository.findByActivoTrue().stream()
                 .map(this::convertToCasoDTO)
                 .collect(Collectors.toList());
     }
 
-    // Método privado para convertir una entidad Caso a un CasoDTO
     private CasoDTO convertToCasoDTO(Caso caso) {
-        String nombreMunicipio = "Sin Municipio";
-        if (caso.getIdMunicipio() != null) {
-            Optional<Municipio> municipioOptional = municipioRepository.findById(caso.getIdMunicipio());
-            nombreMunicipio = municipioOptional.map(Municipio::getMunicipio).orElse("Sin Municipio");
-        }
-
-        String nombreDepartamento = "Sin Departamento";
-        if (caso.getIdDepartamentos() != null) {
-            Optional<Departamentos> departamentosOptional = departamentosRepository.findById(caso.getIdDepartamentos());
-            nombreDepartamento = departamentosOptional.map(Departamentos::getDepartamento).orElse("Sin Departamento");
-        }
+        String nombreMunicipio = caso.getMunicipio() != null ? caso.getMunicipio().getMunicipio() : "Sin Municipio";
+        String nombreDepartamento = caso.getDepartamentos() != null ? caso.getDepartamentos().getDepartamento() : "Sin Departamento";
 
         return new CasoDTO(
-
                 caso.getIdCaso(),
                 caso.getCodigoCaso(),
                 caso.getDelito(),
@@ -120,7 +117,6 @@ public class CasoService {
         );
     }
 
-    // Métodos existentes que devuelven List<String> - se mantienen por ahora
     public List<String> obtenerTodosLosCasosConNombresString() {
         return casoRepository.findAll().stream()
                 .map(this::formatearCasoConNombres)
@@ -133,19 +129,9 @@ public class CasoService {
                 .collect(Collectors.toList());
     }
 
-    // Método privado para formatear la información del caso con los nombres
     private String formatearCasoConNombres(Caso caso) {
-        String nombreMunicipio = "Sin Municipio";
-        if (caso.getIdMunicipio() != null) {
-            Optional<Municipio> municipioOptional = municipioRepository.findById(caso.getIdMunicipio());
-            nombreMunicipio = municipioOptional.map(Municipio::getMunicipio).orElse("Sin Municipio");
-        }
-
-        String nombreDepartamento = "Sin Departamento";
-        if (caso.getIdDepartamentos() != null) {
-            Optional<Departamentos> departamentosOptional = departamentosRepository.findById(caso.getIdDepartamentos());
-            nombreDepartamento = departamentosOptional.map(Departamentos::getDepartamento).orElse("Sin Departamento");
-        }
+        String nombreMunicipio = caso.getMunicipio() != null ? caso.getMunicipio().getMunicipio() : "Sin Municipio";
+        String nombreDepartamento = caso.getDepartamentos() != null ? caso.getDepartamentos().getDepartamento() : "Sin Departamento";
 
         return String.format(
                 "ID: %d, Código: %s, Delito: %s, Defensor: %s, Usuario Visitado: %s, Departamento: %s, Municipio: %s, Activo: %s",
@@ -160,7 +146,11 @@ public class CasoService {
         );
     }
 
-    private DepartamentosRepository departamentosRepository() {
+    public MunicipioRepository getMunicipioRepository() {
+        return municipioRepository;
+    }
+
+    public DepartamentosRepository getDepartamentosRepository() {
         return departamentosRepository;
     }
 
@@ -186,21 +176,11 @@ public class CasoService {
                 casoExistente.setActivo(casoDTO.getActivo());
             }
 
-            // Buscar y establecer el ID del Municipio por nombre
-            if (casoDTO.getNombreMunicipio() != null && !casoDTO.getNombreMunicipio().isEmpty() && !casoDTO.getNombreMunicipio().equals("Sin Municipio")) {
-                municipioRepository.findByMunicipio(casoDTO.getNombreMunicipio())
-                        .ifPresent(casoExistente::setIdMunicipio);
-            } else if (casoDTO.getNombreMunicipio() != null && (casoDTO.getNombreMunicipio().isEmpty() || casoDTO.getNombreMunicipio().equals("Sin Municipio"))) {
-                casoExistente.setIdMunicipio(null); // Desvincular municipio si se envía vacío o "Sin Municipio"
-            }
-
-            // Buscar y establecer el ID del Departamento por nombre
-            if (casoDTO.getNombreDepartamento() != null && !casoDTO.getNombreDepartamento().isEmpty() && !casoDTO.getNombreDepartamento().equals("Sin Departamento")) {
-                departamentosRepository.findByDepartamento(casoDTO.getNombreDepartamento())
-                        .ifPresent(casoExistente::setIdDepartamentos);
-            } else if (casoDTO.getNombreDepartamento() != null && (casoDTO.getNombreDepartamento().isEmpty() || casoDTO.getNombreDepartamento().equals("Sin Departamento"))) {
-                casoExistente.setIdDepartamentos(null); // Desvincular departamento si se envía vacío o "Sin Departamento"
-            }
+            // Buscar y establecer las entidades Municipio y Departamentos
+            municipioRepository.findByMunicipio(casoDTO.getNombreMunicipio())
+                    .ifPresent(casoExistente::setMunicipio);
+            departamentosRepository.findByDepartamento(casoDTO.getNombreDepartamento())
+                    .ifPresent(casoExistente::setDepartamentos);
 
             Caso casoActualizado = casoRepository.save(casoExistente);
             return Optional.of(convertToCasoDTO(casoActualizado));

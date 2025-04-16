@@ -1,6 +1,7 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
 import com.agendamientos.agendamientosTurnos.dto.MisionDTO;
+import com.agendamientos.agendamientosTurnos.dto.ReporteFuncionarioCasosDTO;
 import com.agendamientos.agendamientosTurnos.entity.Mision;
 import com.agendamientos.agendamientosTurnos.service.MisionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,5 +100,10 @@ public class MisionController {
         Optional<Mision> misionActualizada = misionService.actualizarMision(numeroMision, misionDTO);
         return misionActualizada.map(mision -> new ResponseEntity<>(mision, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+    @GetMapping("/reporte/funcionarios-casos")
+    public ResponseEntity<List<ReporteFuncionarioCasosDTO>> obtenerReporteFuncionariosCasos() {
+        List<ReporteFuncionarioCasosDTO> reporte = misionService.obtenerReporteFuncionariosConCasos();
+        return ResponseEntity.ok(reporte);
     }
 }

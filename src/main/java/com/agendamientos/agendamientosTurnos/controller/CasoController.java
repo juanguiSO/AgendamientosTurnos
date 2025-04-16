@@ -22,12 +22,9 @@ public class CasoController {
         this.casoService = casoService;
     }
 
-
-
-
     @PostMapping
-    public ResponseEntity<Caso> guardarCaso(@RequestBody Caso caso) {
-        Caso nuevoCaso = casoService.guardarCaso(caso);
+    public ResponseEntity<Caso> guardarCaso(@RequestBody CasoDTO casoDTO) {
+        Caso nuevoCaso = casoService.guardarCaso(casoDTO);
         return new ResponseEntity<>(nuevoCaso, HttpStatus.CREATED);
     }
 
@@ -42,12 +39,6 @@ public class CasoController {
         List<CasoDTO> casosInfo = casoService.obtenerTodosLosCasosConNombres();
         return new ResponseEntity<>(casosInfo, HttpStatus.OK);
     }
-    @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarCaso(
-            @PathVariable Integer id,
-            @RequestBody CasoDTO casoDTO) {
-        Optional<CasoDTO> casoActualizado = casoService.actualizarCaso(id, casoDTO);
-        return casoActualizado.map(dto -> new ResponseEntity<>(dto, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
+
+
 }

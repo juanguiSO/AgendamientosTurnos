@@ -29,17 +29,22 @@ public class Caso {
     @Column(name = "nombre_usuario_visitado", length = 255)
     private String nombreUsuarioVisitado;
 
-    @Column(name = "id_departamentos")
-    private Integer idDepartamentos;
 
-    @Column(name = "id_municipio")
-    private Integer idMunicipio;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_departamentos")
+    private Departamentos departamentos;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_municipio")
+    private Municipio municipio;
 
     @Column(name = "activo", columnDefinition = "TINYINT(1)")
-    private Boolean activo; // Usamos Boolean para permitir valores nulos si la base de datos lo permite
+    private Boolean activo;
 
-    @OneToMany(mappedBy = "caso") // Asumiendo una relación con otra entidad llamada Mision
+    @OneToMany(mappedBy = "caso")
     private List<Mision> misiones;
+
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
@@ -65,10 +70,6 @@ public class Caso {
         this.nombreDefensorPublico = nombreDefensorPublico;
     }
 
-    public Integer getIdDepartamentos() {
-        return idDepartamentos;
-    }
-
     public Integer getIdCaso() {
         return idCaso;
     }
@@ -89,10 +90,6 @@ public class Caso {
         return nombreDefensorPublico;
     }
 
-    public Integer getIdMunicipio() {
-        return idMunicipio;
-    }
-
     public List<Mision> getMisiones() {
         return misiones;
     }
@@ -101,9 +98,19 @@ public class Caso {
         return activo;
     }
 
-    public void setIdMunicipio(Municipio municipio) {
+    public Departamentos getDepartamentos() {
+        return departamentos;
     }
 
-    public void setIdDepartamentos(Departamentos departamentos) {
+    public void setDepartamentos(Departamentos departamentos) {
+        this.departamentos = departamentos;
+    }
+
+    public Municipio getMunicipio() {
+        return municipio;
+    }
+
+    public void setMunicipio(Municipio municipio) {
+        this.municipio = municipio;
     }
 }
