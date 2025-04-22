@@ -7,12 +7,14 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @Data
 @Entity
 @Table(name = "departamentos")
-public class Departamentos {
+public class Departamento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,6 +25,9 @@ public class Departamentos {
     @Size(max = 255, message = "El nombre del departamento no puede tener más de 255 caracteres")
     @Column(name = "departamento", length = 255)
     private String departamento;
+
+    @OneToMany(mappedBy = "departamento")
+    private List<Municipio> municipios;
 
     public String getDepartamento() {
         return departamento;

@@ -2,9 +2,7 @@ package com.agendamientos.agendamientosTurnos.service;
 
 import com.agendamientos.agendamientosTurnos.dto.CasoDTO;
 import com.agendamientos.agendamientosTurnos.entity.Caso;
-import com.agendamientos.agendamientosTurnos.entity.Departamentos;
 import com.agendamientos.agendamientosTurnos.entity.Funcionario;
-import com.agendamientos.agendamientosTurnos.entity.Municipio;
 import com.agendamientos.agendamientosTurnos.entity.Mision; // Import Mision
 import com.agendamientos.agendamientosTurnos.repository.CasoRepository;
 import com.agendamientos.agendamientosTurnos.repository.DepartamentosRepository;
@@ -71,7 +69,7 @@ public class CasoService {
         municipioRepository.findByMunicipio(casoDTO.getNombreMunicipio())
                 .ifPresent(caso::setMunicipio);
         departamentosRepository.findByDepartamento(casoDTO.getNombreDepartamento())
-                .ifPresent(caso::setDepartamentos);
+                .ifPresent(caso::setDepartamento);
 
         return casoRepository.save(caso);
     }
@@ -103,7 +101,7 @@ public class CasoService {
 
     private CasoDTO convertToCasoDTO(Caso caso) {
         String nombreMunicipio = caso.getMunicipio() != null ? caso.getMunicipio().getMunicipio() : "Sin Municipio";
-        String nombreDepartamento = caso.getDepartamentos() != null ? caso.getDepartamentos().getDepartamento() : "Sin Departamento";
+        String nombreDepartamento = caso.getDepartamento() != null ? caso.getDepartamento().getDepartamento() : "Sin Departamento";
 
         return new CasoDTO(
                 caso.getIdCaso(),
@@ -131,7 +129,7 @@ public class CasoService {
 
     private String formatearCasoConNombres(Caso caso) {
         String nombreMunicipio = caso.getMunicipio() != null ? caso.getMunicipio().getMunicipio() : "Sin Municipio";
-        String nombreDepartamento = caso.getDepartamentos() != null ? caso.getDepartamentos().getDepartamento() : "Sin Departamento";
+        String nombreDepartamento = caso.getDepartamento() != null ? caso.getDepartamento().getDepartamento() : "Sin Departamento";
 
         return String.format(
                 "ID: %d, Código: %s, Delito: %s, Defensor: %s, Usuario Visitado: %s, Departamento: %s, Municipio: %s, Activo: %s",
@@ -180,7 +178,7 @@ public class CasoService {
             municipioRepository.findByMunicipio(casoDTO.getNombreMunicipio())
                     .ifPresent(casoExistente::setMunicipio);
             departamentosRepository.findByDepartamento(casoDTO.getNombreDepartamento())
-                    .ifPresent(casoExistente::setDepartamentos);
+                    .ifPresent(casoExistente::setDepartamento);
 
             Caso casoActualizado = casoRepository.save(casoExistente);
             return Optional.of(convertToCasoDTO(casoActualizado));

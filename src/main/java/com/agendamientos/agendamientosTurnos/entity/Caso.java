@@ -32,9 +32,9 @@ public class Caso {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_departamentos")
-    private Departamentos departamentos;
+    private Departamento departamento;
 
-
+    // **Nueva relación con la entidad Municipio**
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_municipio")
     private Municipio municipio;
@@ -98,12 +98,12 @@ public class Caso {
         return activo;
     }
 
-    public Departamentos getDepartamentos() {
-        return departamentos;
+    public Departamento getDepartamento() {
+        return departamento;
     }
 
-    public void setDepartamentos(Departamentos departamentos) {
-        this.departamentos = departamentos;
+    public void setDepartamento(Departamento departamento) {
+        this.departamento = departamento;
     }
 
     public Municipio getMunicipio() {

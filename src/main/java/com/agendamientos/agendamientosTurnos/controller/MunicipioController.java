@@ -1,6 +1,8 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
+import com.agendamientos.agendamientosTurnos.entity.Departamento;
 import com.agendamientos.agendamientosTurnos.entity.Municipio;
+import com.agendamientos.agendamientosTurnos.service.DepartamentosService; // Necesitas el servicio de Departamentos
 import com.agendamientos.agendamientosTurnos.service.MunicipioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,6 +19,9 @@ public class MunicipioController {
     @Autowired
     private MunicipioService municipioService;
 
+    @Autowired
+    private DepartamentosService departamentosService; // Inyecta el servicio de Departamentos
+
     @GetMapping
     public ResponseEntity<List<Municipio>> getAllMunicipios() {
         return new ResponseEntity<>(municipioService.getAllMunicipios(), HttpStatus.OK);
@@ -31,7 +36,12 @@ public class MunicipioController {
 
     @PostMapping
     public ResponseEntity<Municipio> createMunicipio(@RequestBody Municipio municipio) {
-        return new ResponseEntity<>(municipioService.createMunicipio(municipio), HttpStatus.CREATED);
+        // Ahora el objeto Municipio que recibes debería contener el idDepartamento
+        Municipio createdMunicipio = municipioService.createMunicipio(municipio);
+        if (createdMunicipio != null) {
+            return new ResponseEntity<>(createdMunicipio, HttpStatus.CREATED);
+        }
+        return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // O otro código de error apropiado
     }
 
     @PutMapping("/{id}")
@@ -50,4 +60,18 @@ public class MunicipioController {
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
+
+    // Nuevo endpoint para obtener todos los departamentos
+    @GetMapping("/departamentos")
+    public ResponseEntity<List<Departamento>> getAllDepartamentos() {
+        return new ResponseEntity<>(departamentosService.getAllDepartamentos(), HttpStatus.OK);
+    }
+
+    // Opcional: Endpoint para obtener municipios por ID de departamento
+    @GetMapping("/departamento/{departamentoId}")
+    public ResponseEntity<List<Municipio>> getMunicipiosByDepartamentoId(@PathVariable Integer departamentoId) {
+        return new ResponseEntity<>(municipioService.getMunicipiosByDepartamentoId(departamentoId), HttpStatus.OK);
+    }
+
+
 }
