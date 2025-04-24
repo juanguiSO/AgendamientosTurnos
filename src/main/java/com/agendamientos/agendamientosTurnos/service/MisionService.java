@@ -10,6 +10,8 @@ import com.agendamientos.agendamientosTurnos.repository.CasoRepository;
 import com.agendamientos.agendamientosTurnos.repository.FuncionarioRepository;
 import com.agendamientos.agendamientosTurnos.repository.MisionRepository;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class MisionService {
+    private static final Logger logger = LoggerFactory.getLogger(MisionService.class);
+
 
     private final MisionRepository misionRepository;
     private final FuncionarioRepository funcionarioRepository;
@@ -64,24 +68,47 @@ public class MisionService {
     }
 
     public Mision guardarMision(CrearMisionDTO crearMisionDTO) {
+        logger.info("Guardando nueva misión con DTO: {}", crearMisionDTO);
         Mision nuevaMision = new Mision();
         nuevaMision.setNumeroMision(crearMisionDTO.getNumeroMision());
         nuevaMision.setActividades(crearMisionDTO.getActividades());
         nuevaMision.setActivo(crearMisionDTO.getActivo());
+        logger.info("Nueva misión creada: {}", nuevaMision);
 
         // Relación con Funcionario
         if (crearMisionDTO.getIdFuncionario() != null) {
+            logger.info("Buscando funcionario con ID: {}", crearMisionDTO.getIdFuncionario());
             Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(crearMisionDTO.getIdFuncionario());
-            funcionarioOptional.ifPresent(nuevaMision::setFuncionario);
+            funcionarioOptional.ifPresent(funcionario -> {
+                nuevaMision.setFuncionario(funcionario);
+                logger.info("Funcionario encontrado: {}", funcionario);
+            });
+            if (!funcionarioOptional.isPresent()) {
+                logger.warn("No se encontró funcionario con ID: {}", crearMisionDTO.getIdFuncionario());
+            }
+        } else {
+            logger.warn("ID de funcionario no proporcionado en el DTO.");
         }
 
         // Relación con Caso
         if (crearMisionDTO.getIdCaso() != null) {
+            logger.info("Buscando caso con ID: {}", crearMisionDTO.getIdCaso());
             Optional<Caso> casoOptional = casoRepository.findById(crearMisionDTO.getIdCaso());
-            casoOptional.ifPresent(nuevaMision::setCaso);
+            casoOptional.ifPresent(caso -> {
+                nuevaMision.setCaso(caso);
+                logger.info("Caso encontrado: {}", caso);
+            });
+            if (!casoOptional.isPresent()) {
+                logger.warn("No se encontró caso con ID: {}", crearMisionDTO.getIdCaso());
+            }
+        } else {
+            logger.warn("ID de caso no proporcionado en el DTO.");
         }
 
-        return misionRepository.save(nuevaMision);
+        logger.info("Guardando misión en la base de datos: {}", nuevaMision);
+        Mision misionGuardada = misionRepository.save(nuevaMision);
+        logger.info("Misión guardada exitosamente con ID: {}", misionGuardada.getNumeroMision());
+        return misionGuardada;
     }
 
     @Transactional

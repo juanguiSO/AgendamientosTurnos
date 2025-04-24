@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,6 +19,7 @@ public class Mision {
 
     @ManyToOne
     @JoinColumn(name = "id_funcionario")
+    @JsonIgnore
     private Funcionario funcionario; // Relación con la entidad Funcionario
 
     @Column(name = "actividades", length = 255)
@@ -25,6 +27,7 @@ public class Mision {
 
     @ManyToOne
     @JoinColumn(name = "id_caso")
+    @JsonIgnore
     private Caso caso;
 
     @Column(name = "activo", columnDefinition = "TINYINT(1)")
