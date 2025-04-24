@@ -40,17 +40,14 @@ public class CasoController {
         List<CasoDTO> casosInfo = casoService.obtenerTodosLosCasosConNombres();
         return new ResponseEntity<>(casosInfo, HttpStatus.OK);
     }
-    @PostMapping("/{id}")  // <-- Este es el endpoint que necesitas
-    public ResponseEntity<CasoDTO> actualizarCaso(
-            @PathVariable Integer id,  // <-- Obtiene el ID del caso de la URL
-            @RequestBody CasoDTO casoDTO) { // <-- Obtiene los datos del caso del cuerpo de la petición (JSON)
-
-        Optional<CasoDTO> casoActualizado = casoService.actualizarCaso(id, casoDTO);
-
-        if (casoActualizado.isPresent()) {
-            return new ResponseEntity<>(casoActualizado.get(), HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Devuelve 404 si el caso no existe
+    @PutMapping("/{id}")  // <-- Este es el endpoint que necesitas
+    public ResponseEntity<CasoDTO> actualizarCaso(@PathVariable Integer id, @RequestBody CasoDTO casoDTO) {
+        try {
+            Optional<CasoDTO> casoActualizadoOptional = casoService.actualizarCaso(id, casoDTO);
+            return casoActualizadoOptional.map(casoActualizado -> new ResponseEntity<>(casoActualizado, HttpStatus.OK))
+                    .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Código 400 para errores de validación
         }
     }
 

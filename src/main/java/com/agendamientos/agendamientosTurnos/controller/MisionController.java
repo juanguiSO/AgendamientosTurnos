@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
+import com.agendamientos.agendamientosTurnos.dto.CrearMisionDTO;
 import com.agendamientos.agendamientosTurnos.dto.MisionDTO;
 import com.agendamientos.agendamientosTurnos.dto.ReporteFuncionarioCasosDTO;
 import com.agendamientos.agendamientosTurnos.entity.Mision;
@@ -76,11 +77,12 @@ public class MisionController {
         return new ResponseEntity<>(misionesActivasPorCaso, HttpStatus.OK);
     }
 
-    @PostMapping
-    public ResponseEntity<Mision> guardarMision(@RequestBody Mision mision) {
-        Mision nuevaMision = misionService.guardarMision(mision);
+    @PostMapping("/crear")
+    public ResponseEntity<Mision> guardarNuevaMision(@RequestBody CrearMisionDTO crearMisionDTO) {
+        Mision nuevaMision = misionService.guardarMision(crearMisionDTO);
         return new ResponseEntity<>(nuevaMision, HttpStatus.CREATED);
     }
+
 
     @DeleteMapping("/{numeroMision}")
     public ResponseEntity<Void> eliminarMision(@PathVariable Integer numeroMision) {

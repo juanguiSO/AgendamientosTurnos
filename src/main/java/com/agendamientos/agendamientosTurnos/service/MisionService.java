@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.service;
 
+import com.agendamientos.agendamientosTurnos.dto.CrearMisionDTO;
 import com.agendamientos.agendamientosTurnos.dto.MisionDTO;
 import com.agendamientos.agendamientosTurnos.dto.ReporteFuncionarioCasosDTO;
 import com.agendamientos.agendamientosTurnos.entity.Caso;
@@ -62,8 +63,25 @@ public class MisionService {
         return misionRepository.findById(id);
     }
 
-    public Mision guardarMision(Mision mision) {
-        return misionRepository.save(mision);
+    public Mision guardarMision(CrearMisionDTO crearMisionDTO) {
+        Mision nuevaMision = new Mision();
+        nuevaMision.setNumeroMision(crearMisionDTO.getNumeroMision());
+        nuevaMision.setActividades(crearMisionDTO.getActividades());
+        nuevaMision.setActivo(crearMisionDTO.getActivo());
+
+        // Relación con Funcionario
+        if (crearMisionDTO.getIdFuncionario() != null) {
+            Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(crearMisionDTO.getIdFuncionario());
+            funcionarioOptional.ifPresent(nuevaMision::setFuncionario);
+        }
+
+        // Relación con Caso
+        if (crearMisionDTO.getIdCaso() != null) {
+            Optional<Caso> casoOptional = casoRepository.findById(crearMisionDTO.getIdCaso());
+            casoOptional.ifPresent(nuevaMision::setCaso);
+        }
+
+        return misionRepository.save(nuevaMision);
     }
 
     @Transactional
@@ -132,10 +150,10 @@ public class MisionService {
             }
 
             // Manejar la relación con Funcionario por ID
-            if (misionDTO.getIdFuncionario() != null) {
+           /** if (misionDTO.getIdFuncionario() != null) {
                 Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(misionDTO.getIdFuncionario());
                 funcionarioOptional.ifPresent(misionExistente::setFuncionario);
-            }
+            }*/
 
             if (misionDTO.getNumeroCaso() != null && !misionDTO.getNumeroCaso().isEmpty()) {
                 Optional<Caso> casoOptional = casoRepository.findByCodigoCaso(misionDTO.getNumeroCaso());

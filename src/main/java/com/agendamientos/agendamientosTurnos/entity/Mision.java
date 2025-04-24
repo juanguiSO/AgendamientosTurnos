@@ -65,4 +65,8 @@ public class Mision {
     public Caso getCaso() {
         return caso;
     }
+
+    public void setNumeroMision(Integer numeroMision) {
+        this.numeroMision = numeroMision;
+    }
 }

@@ -149,6 +149,27 @@ public class CasoService {
         if (casoExistenteOptional.isPresent()) {
             Caso casoExistente = casoExistenteOptional.get();
 
+            // Realizar validaciones
+            if (casoDTO.getCodigoCaso() != null && casoDTO.getCodigoCaso().trim().isEmpty()) {
+                throw new IllegalArgumentException("El código del caso no puede estar vacío.");
+            }
+            if (casoDTO.getDelito() != null && casoDTO.getDelito().trim().isEmpty()) {
+                throw new IllegalArgumentException("El delito no puede estar vacío.");
+            }
+            if (casoDTO.getNombreDefensorPublico() != null && casoDTO.getNombreDefensorPublico().trim().isEmpty()) {
+                throw new IllegalArgumentException("El nombre del defensor público no puede estar vacío.");
+            }
+            if (casoDTO.getNombreUsuarioVisitado() != null && casoDTO.getNombreUsuarioVisitado().trim().isEmpty()) {
+                throw new IllegalArgumentException("El nombre del usuario visitado no puede estar vacío.");
+            }
+            if (casoDTO.getIdMunicipio() != null && casoDTO.getIdMunicipio() <= 0) {
+                throw new IllegalArgumentException("El ID del municipio debe ser un valor positivo.");
+            }
+            if (casoDTO.getIdDepartamento() != null && casoDTO.getIdDepartamento() <= 0) {
+                throw new IllegalArgumentException("El ID del departamento debe ser un valor positivo.");
+            }
+
+            // Actualizar los campos solo si la validación pasa o si el campo no se proporciona
             if (casoDTO.getCodigoCaso() != null) {
                 casoExistente.setCodigoCaso(casoDTO.getCodigoCaso());
             }
@@ -165,8 +186,6 @@ public class CasoService {
                 casoExistente.setActivo(casoDTO.getActivo());
             }
 
-
-
             // Buscar y establecer las entidades Municipio y Departamentos por ID
             if (casoDTO.getIdMunicipio() != null) {
                 municipioRepository.findById(casoDTO.getIdMunicipio())
@@ -182,6 +201,7 @@ public class CasoService {
                                 () -> System.out.println("Departamento no encontrado con ID: " + casoDTO.getIdDepartamento())
                         );
             }
+
             Caso casoActualizado = casoRepository.save(casoExistente);
             return Optional.of(convertToCasoDTO(casoActualizado));
         }
