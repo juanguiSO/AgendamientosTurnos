@@ -2,28 +2,28 @@ package com.agendamientos.agendamientosTurnos.dto;
 
 public class MisionDTO {
     private Integer numeroMision;
-    private Integer idFuncionario; // Cambiado a ID
-    private String nombreFuncionario; // Puedes mantenerlo para mostrar, pero usa idFuncionario para la relación
-    private String apellidoFuncionario; // Puedes mantenerlo para mostrar
+    private Integer idFuncionario;
+    private String nombreFuncionario;
+    private String apellidoFuncionario;
     private String actividades;
     private String numeroCaso;
+    private Integer idCaso; // Nuevo campo para el ID del caso
     private Boolean activo;
 
-    // Constructor, getters y setters
     public MisionDTO() {
     }
 
-    public MisionDTO(Integer numeroMision, Integer idFuncionario,String nombreFuncionario, String apellidoFuncionario, String actividades, String numeroCaso, Boolean activo) {
+    public MisionDTO(Integer numeroMision, Integer idFuncionario, String nombreFuncionario, String apellidoFuncionario, String actividades, String numeroCaso, Integer idCaso, Boolean activo) {
         this.numeroMision = numeroMision;
-        this.idFuncionario= idFuncionario;
+        this.idFuncionario = idFuncionario;
         this.nombreFuncionario = nombreFuncionario;
         this.apellidoFuncionario = apellidoFuncionario;
         this.actividades = actividades;
         this.numeroCaso = numeroCaso;
+        this.idCaso = idCaso;
         this.activo = activo;
     }
 
-    // Getters y setters para todos los campos, incluyendo idFuncionario
     public Integer getNumeroMision() {
         return numeroMision;
     }
@@ -70,6 +70,14 @@ public class MisionDTO {
 
     public void setNumeroCaso(String numeroCaso) {
         this.numeroCaso = numeroCaso;
+    }
+
+    public Integer getIdCaso() {
+        return idCaso;
+    }
+
+    public void setIdCaso(Integer idCaso) {
+        this.idCaso = idCaso;
     }
 
     public Boolean getActivo() {

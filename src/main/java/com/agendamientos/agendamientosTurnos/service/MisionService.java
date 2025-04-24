@@ -138,6 +138,7 @@ public class MisionService {
                         m.getFuncionario() != null ? m.getFuncionario().getApellido() : "Sin Funcionario",
                         m.getActividades(),
                         m.getCaso() != null ? m.getCaso().getCodigoCaso() : "Sin Caso",
+                        m.getCaso() != null ? m.getCaso().getIdCaso() : null, // Aquí obtenemos el ID del caso
                         m.getActivo()))
                 .collect(Collectors.toList());
     }
