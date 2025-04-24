@@ -1,6 +1,7 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
 import com.agendamientos.agendamientosTurnos.dto.CasoDTO;
+import com.agendamientos.agendamientosTurnos.dto.CasoDetalleDTO;
 import com.agendamientos.agendamientosTurnos.entity.Caso;
 import com.agendamientos.agendamientosTurnos.service.CasoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,5 +53,22 @@ public class CasoController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Devuelve 404 si el caso no existe
         }
     }
+
+    // Método para obtener todos los casos con detalle (nombres de departamento y municipio)
+    @GetMapping("/detalle")
+    public ResponseEntity<List<CasoDetalleDTO>> obtenerTodosLosCasosConDetalle() {
+        List<CasoDetalleDTO> casosDetalle = casoService.obtenerTodosLosCasosConDetalle();
+        return new ResponseEntity<>(casosDetalle, HttpStatus.OK);
+    }
+/**
+    @GetMapping("/detalle/{id}")
+    public ResponseEntity<CasoDetalleDTO> obtenerCasoConDetallePorId(@PathVariable Integer id) {
+        CasoDetalleDTO casoDetalle = casoService.obtenerCasoConDetallePorId(id);
+        if (casoDetalle != null) {
+            return new ResponseEntity<>(casoDetalle, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }*/
 
 }

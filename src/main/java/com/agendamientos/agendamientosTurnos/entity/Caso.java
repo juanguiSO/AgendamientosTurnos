@@ -113,4 +113,5 @@ public class Caso {
     public void setMunicipio(Municipio municipio) {
         this.municipio = municipio;
     }
+
 }
