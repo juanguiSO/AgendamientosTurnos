@@ -22,7 +22,7 @@ public class CasoController {
         this.casoService = casoService;
     }
 
-    @PostMapping
+    @PostMapping("/guardar")
     public ResponseEntity<Caso> guardarCaso(@RequestBody CasoDTO casoDTO) {
         Caso nuevoCaso = casoService.guardarCaso(casoDTO);
         return new ResponseEntity<>(nuevoCaso, HttpStatus.CREATED);
@@ -39,6 +39,18 @@ public class CasoController {
         List<CasoDTO> casosInfo = casoService.obtenerTodosLosCasosConNombres();
         return new ResponseEntity<>(casosInfo, HttpStatus.OK);
     }
+    @PostMapping("/{id}")  // <-- Este es el endpoint que necesitas
+    public ResponseEntity<CasoDTO> actualizarCaso(
+            @PathVariable Integer id,  // <-- Obtiene el ID del caso de la URL
+            @RequestBody CasoDTO casoDTO) { // <-- Obtiene los datos del caso del cuerpo de la petición (JSON)
 
+        Optional<CasoDTO> casoActualizado = casoService.actualizarCaso(id, casoDTO);
+
+        if (casoActualizado.isPresent()) {
+            return new ResponseEntity<>(casoActualizado.get(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Devuelve 404 si el caso no existe
+        }
+    }
 
 }

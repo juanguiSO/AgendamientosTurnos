@@ -36,4 +36,12 @@ public class Departamento {
     public void setDepartamento(String departamento) {
         this.departamento = departamento;
     }
+
+    public Integer getIdDepartamentos() {
+        return idDepartamentos;
+    }
+
+    public void setIdDepartamentos(Integer idDepartamentos) {
+        this.idDepartamentos = idDepartamentos;
+    }
 }

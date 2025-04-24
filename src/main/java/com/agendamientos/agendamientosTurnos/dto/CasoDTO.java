@@ -7,8 +7,8 @@ public class CasoDTO {
     private String delito;
     private String nombreDefensorPublico;
     private String nombreUsuarioVisitado;
-    private String nombreDepartamento;
-    private String nombreMunicipio;
+    private Integer idDepartamento; // <-- Cambiado a Integer
+    private Integer idMunicipio;    // <-- Cambiado a Integer
     private Boolean activo;
 
     // Constructor por defecto (necesario para algunas frameworks)
@@ -24,8 +24,8 @@ public class CasoDTO {
         this.delito = delito;
         this.nombreDefensorPublico = nombreDefensorPublico;
         this.nombreUsuarioVisitado = nombreUsuarioVisitado;
-        this.nombreDepartamento = nombreDepartamento;
-        this.nombreMunicipio = nombreMunicipio;
+        this.idDepartamento = idDepartamento;
+        this.idMunicipio = idMunicipio;
         this.activo = activo;
     }
 
@@ -70,20 +70,20 @@ public class CasoDTO {
         this.nombreUsuarioVisitado = nombreUsuarioVisitado;
     }
 
-    public String getNombreDepartamento() {
-        return nombreDepartamento;
+    public Integer getIdDepartamento() {
+        return idDepartamento;
     }
 
-    public void setNombreDepartamento(String nombreDepartamento) {
-        this.nombreDepartamento = nombreDepartamento;
+    public Integer getIdMunicipio() {
+        return idMunicipio;
     }
 
-    public String getNombreMunicipio() {
-        return nombreMunicipio;
+    public void setIdDepartamento(Integer idDepartamento) {
+        this.idDepartamento = idDepartamento;
     }
 
-    public void setNombreMunicipio(String nombreMunicipio) {
-        this.nombreMunicipio = nombreMunicipio;
+    public void setIdMunicipio(Integer idMunicipio) {
+        this.idMunicipio = idMunicipio;
     }
 
     public Boolean getActivo() {

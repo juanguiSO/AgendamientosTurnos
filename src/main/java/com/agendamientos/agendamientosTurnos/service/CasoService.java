@@ -1,9 +1,7 @@
 package com.agendamientos.agendamientosTurnos.service;
 
 import com.agendamientos.agendamientosTurnos.dto.CasoDTO;
-import com.agendamientos.agendamientosTurnos.entity.Caso;
-import com.agendamientos.agendamientosTurnos.entity.Funcionario;
-import com.agendamientos.agendamientosTurnos.entity.Mision; // Import Mision
+import com.agendamientos.agendamientosTurnos.entity.*;
 import com.agendamientos.agendamientosTurnos.repository.CasoRepository;
 import com.agendamientos.agendamientosTurnos.repository.DepartamentosRepository;
 import com.agendamientos.agendamientosTurnos.repository.FuncionarioRepository;
@@ -65,13 +63,20 @@ public class CasoService {
         caso.setNombreDefensorPublico(casoDTO.getNombreDefensorPublico());
         caso.setNombreUsuarioVisitado(casoDTO.getNombreUsuarioVisitado());
 
-        // Buscar y establecer las entidades Municipio y Departamentos
-        municipioRepository.findByMunicipio(casoDTO.getNombreMunicipio())
-                .ifPresent(caso::setMunicipio);
-        departamentosRepository.findByDepartamento(casoDTO.getNombreDepartamento())
-                .ifPresent(caso::setDepartamento);
+        // Buscar y establecer las entidades Municipio y Departamentos por ID
+        if (casoDTO.getIdMunicipio() != null) {
+            Optional<Municipio> municipioOptional = municipioRepository.findById(casoDTO.getIdMunicipio());
+            municipioOptional.ifPresent(caso::setMunicipio);
+        }
+        if (casoDTO.getIdDepartamento() != null) {
+            Optional<Departamento> departamentoOptional = departamentosRepository.findById(casoDTO.getIdDepartamento());
+            departamentoOptional.ifPresent(caso::setDepartamento);
+        }
 
-        return casoRepository.save(caso);
+        Caso casoGuardado = casoRepository.save(caso);
+
+        // Crear y retornar CasoDTO con los IDs de Departamento y Municipio
+        return casoGuardado;
     }
 
     @Transactional
@@ -174,16 +179,41 @@ public class CasoService {
                 casoExistente.setActivo(casoDTO.getActivo());
             }
 
-            // Buscar y establecer las entidades Municipio y Departamentos
-            municipioRepository.findByMunicipio(casoDTO.getNombreMunicipio())
-                    .ifPresent(casoExistente::setMunicipio);
-            departamentosRepository.findByDepartamento(casoDTO.getNombreDepartamento())
-                    .ifPresent(casoExistente::setDepartamento);
+
+
+            // Buscar y establecer las entidades Municipio y Departamentos por ID
+            if (casoDTO.getIdMunicipio() != null) {
+                municipioRepository.findById(casoDTO.getIdMunicipio())
+                        .ifPresent(casoExistente::setMunicipio);
+            }
+            if (casoDTO.getIdDepartamento() != null) {
+                departamentosRepository.findById(casoDTO.getIdDepartamento())
+                        .ifPresent(casoExistente::setDepartamento);
+            }
 
             Caso casoActualizado = casoRepository.save(casoExistente);
             return Optional.of(convertToCasoDTO(casoActualizado));
         }
         return Optional.empty();
+    }
+    // Método para convertir de DTO a Entidad
+    private Caso convertToEntity(CasoDTO casoDTO) {
+        Caso caso = new Caso();
+        caso.setActivo(casoDTO.getActivo());
+        caso.setCodigoCaso(casoDTO.getCodigoCaso());
+        caso.setDelito(casoDTO.getDelito());
+        caso.setNombreDefensorPublico(casoDTO.getNombreDefensorPublico());
+        caso.setNombreUsuarioVisitado(casoDTO.getNombreUsuarioVisitado());
+
+        if (casoDTO.getIdMunicipio() != null) {
+            municipioRepository.findById(casoDTO.getIdMunicipio())
+                    .ifPresent(caso::setMunicipio);
+        }
+        if (casoDTO.getIdDepartamento() != null) {
+            departamentosRepository.findById(casoDTO.getIdDepartamento())
+                    .ifPresent(caso::setDepartamento);
+        }
+        return caso;
     }
 
 

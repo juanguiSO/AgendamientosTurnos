@@ -59,7 +59,7 @@ public class MunicipioService {
         return false;
     }
 
-    // Método para obtener municipios por ID de departamento (si lo necesitas)
+    // Método para obtener municipios por ID de departamento
     public List<Municipio> getMunicipiosByDepartamentoId(Integer departamentoId) {
         return municipioRepository.findByIdDepartamento(departamentoId);
     }

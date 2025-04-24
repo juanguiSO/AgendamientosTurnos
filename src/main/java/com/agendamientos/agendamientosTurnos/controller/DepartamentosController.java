@@ -22,6 +22,7 @@ public class DepartamentosController {
         return new ResponseEntity<>(departamentosService.getAllDepartamentos(), HttpStatus.OK);
     }
 
+
     @GetMapping("/{id}")
     public ResponseEntity<Departamento> getDepartamentosById(@PathVariable Integer id) {
         Optional<Departamento> departamentos = departamentosService.getDepartamentosById(id);
