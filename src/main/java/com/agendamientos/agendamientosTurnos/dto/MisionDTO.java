@@ -2,7 +2,7 @@ package com.agendamientos.agendamientosTurnos.dto;
 
 public class MisionDTO {
     private Integer numeroMision;
-    //private Integer idFuncionario; // Cambiado a ID
+    private Integer idFuncionario; // Cambiado a ID
     private String nombreFuncionario; // Puedes mantenerlo para mostrar, pero usa idFuncionario para la relación
     private String apellidoFuncionario; // Puedes mantenerlo para mostrar
     private String actividades;
@@ -13,8 +13,9 @@ public class MisionDTO {
     public MisionDTO() {
     }
 
-    public MisionDTO(Integer numeroMision, String nombreFuncionario, String apellidoFuncionario, String actividades, String numeroCaso, Boolean activo) {
+    public MisionDTO(Integer numeroMision, Integer idFuncionario,String nombreFuncionario, String apellidoFuncionario, String actividades, String numeroCaso, Boolean activo) {
         this.numeroMision = numeroMision;
+        this.idFuncionario= idFuncionario;
         this.nombreFuncionario = nombreFuncionario;
         this.apellidoFuncionario = apellidoFuncionario;
         this.actividades = actividades;
@@ -30,7 +31,7 @@ public class MisionDTO {
     public void setNumeroMision(Integer numeroMision) {
         this.numeroMision = numeroMision;
     }
-/**
+
     public Integer getIdFuncionario() {
         return idFuncionario;
     }
@@ -38,7 +39,7 @@ public class MisionDTO {
     public void setIdFuncionario(Integer idFuncionario) {
         this.idFuncionario = idFuncionario;
     }
-*/
+
     public String getNombreFuncionario() {
         return nombreFuncionario;
     }

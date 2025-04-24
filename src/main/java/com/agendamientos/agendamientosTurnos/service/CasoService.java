@@ -258,19 +258,23 @@ public class CasoService {
         dto.setNombreUsuarioVisitado(caso.getNombreUsuarioVisitado());
         dto.setActivo(caso.getActivo());
 
-        // Obtener el nombre del departamento
+        // Set both the ID and name of the department
         if (caso.getDepartamento() != null) {
             Departamento departamento = departamentosRepository.findById(caso.getDepartamento().getIdDepartamentos()).orElse(null);
+            dto.setIdDepartamento(departamento != null ? departamento.getIdDepartamentos() : null);
             dto.setNombreDepartamento(departamento != null ? departamento.getDepartamento() : "N/A");
         } else {
+            dto.setIdDepartamento(null);
             dto.setNombreDepartamento("N/A");
         }
 
-        // Obtener el nombre del municipio
+        // Set both the ID and name of the municipality
         if (caso.getMunicipio() != null) {
             Municipio municipio = municipioRepository.findById(caso.getMunicipio().getIdMunicipio()).orElse(null);
+            dto.setIdMunicipio(municipio != null ? municipio.getIdMunicipio() : null);
             dto.setNombreMunicipio(municipio != null ? municipio.getMunicipio() : "N/A");
         } else {
+            dto.setIdMunicipio(null);
             dto.setNombreMunicipio("N/A");
         }
 

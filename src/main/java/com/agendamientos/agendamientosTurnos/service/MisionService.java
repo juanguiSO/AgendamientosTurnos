@@ -133,6 +133,7 @@ public class MisionService {
         return misionRepository.findAll().stream()
                 .map(m -> new MisionDTO(
                         m.getNumeroMision(),
+                        m.getFuncionario() != null ? m.getFuncionario().getIdFuncionario() : null,
                         m.getFuncionario() != null ? m.getFuncionario().getNombre() : "Sin Funcionario",
                         m.getFuncionario() != null ? m.getFuncionario().getApellido() : "Sin Funcionario",
                         m.getActividades(),

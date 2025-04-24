@@ -7,28 +7,33 @@ public class CasoDetalleDTO {
     private String delito;
     private String nombreDefensorPublico;
     private String nombreUsuarioVisitado;
-    private String nombreDepartamento; // Campo para el nombre del departamento
-    private String nombreMunicipio;    // Campo para el nombre del municipio
+    private Integer idDepartamento; // ID for the department
+    private String nombreDepartamento; // Name of the department
+    private Integer idMunicipio; // ID for the municipality
+    private String nombreMunicipio; // Name of the municipality
     private Boolean activo;
 
-    // Constructor por defecto
+    // Default constructor
     public CasoDetalleDTO() {
     }
 
-    // Constructor con todos los campos
+    // Constructor with all fields
     public CasoDetalleDTO(Integer idCaso, String codigoCaso, String delito, String nombreDefensorPublico,
-                          String nombreUsuarioVisitado, String nombreDepartamento, String nombreMunicipio, Boolean activo) {
+                          String nombreUsuarioVisitado, Integer idDepartamento, String nombreDepartamento,
+                          Integer idMunicipio, String nombreMunicipio, Boolean activo) {
         this.idCaso = idCaso;
         this.codigoCaso = codigoCaso;
         this.delito = delito;
         this.nombreDefensorPublico = nombreDefensorPublico;
         this.nombreUsuarioVisitado = nombreUsuarioVisitado;
+        this.idDepartamento = idDepartamento;
         this.nombreDepartamento = nombreDepartamento;
+        this.idMunicipio = idMunicipio;
         this.nombreMunicipio = nombreMunicipio;
         this.activo = activo;
     }
 
-    // Getters y setters para todos los campos
+    // Getters and setters for all fields
     public Integer getIdCaso() {
         return idCaso;
     }
@@ -69,12 +74,28 @@ public class CasoDetalleDTO {
         this.nombreUsuarioVisitado = nombreUsuarioVisitado;
     }
 
+    public Integer getIdDepartamento() {
+        return idDepartamento;
+    }
+
+    public void setIdDepartamento(Integer idDepartamento) {
+        this.idDepartamento = idDepartamento;
+    }
+
     public String getNombreDepartamento() {
         return nombreDepartamento;
     }
 
     public void setNombreDepartamento(String nombreDepartamento) {
         this.nombreDepartamento = nombreDepartamento;
+    }
+
+    public Integer getIdMunicipio() {
+        return idMunicipio;
+    }
+
+    public void setIdMunicipio(Integer idMunicipio) {
+        this.idMunicipio = idMunicipio;
     }
 
     public String getNombreMunicipio() {
