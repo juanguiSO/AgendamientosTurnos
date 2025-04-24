@@ -4,7 +4,7 @@ public class CrearMisionDTO {
     private Integer numeroMision; // Número único para la misión
     private Integer idFuncionario; // ID del Funcionario relacionado
     private String actividades; // Descripción de las actividades
-    private Integer idCaso; // ID del Caso relacionado
+    private String numeroCaso; // Código del Caso (reemplaza idCaso)
     private Boolean activo; // Estado activo/inactivo
 
     // Constructor por defecto (requerido para algunas frameworks)
@@ -12,11 +12,11 @@ public class CrearMisionDTO {
     }
 
     // Constructor con todos los campos
-    public CrearMisionDTO(Integer numeroMision, Integer idFuncionario, String actividades, Integer idCaso, Boolean activo) {
+    public CrearMisionDTO(Integer numeroMision, Integer idFuncionario, String actividades, String numeroCaso, Boolean activo) {
         this.numeroMision = numeroMision;
         this.idFuncionario = idFuncionario;
         this.actividades = actividades;
-        this.idCaso = idCaso;
+        this.numeroCaso = numeroCaso;
         this.activo = activo;
     }
 
@@ -45,12 +45,12 @@ public class CrearMisionDTO {
         this.actividades = actividades;
     }
 
-    public Integer getIdCaso() {
-        return idCaso;
+    public String getNumeroCaso() {
+        return numeroCaso;
     }
 
-    public void setIdCaso(Integer idCaso) {
-        this.idCaso = idCaso;
+    public void setNumeroCaso(String numeroCaso) {
+        this.numeroCaso = numeroCaso;
     }
 
     public Boolean getActivo() {

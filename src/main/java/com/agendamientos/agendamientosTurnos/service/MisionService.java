@@ -67,6 +67,7 @@ public class MisionService {
         return misionRepository.findById(id);
     }
 
+    @Transactional
     public Mision guardarMision(CrearMisionDTO crearMisionDTO) {
         logger.info("Guardando nueva misión con DTO: {}", crearMisionDTO);
         Mision nuevaMision = new Mision();
@@ -75,7 +76,7 @@ public class MisionService {
         nuevaMision.setActivo(crearMisionDTO.getActivo());
         logger.info("Nueva misión creada: {}", nuevaMision);
 
-        // Relación con Funcionario
+        // Relación con Funcionario (se mantiene igual, buscando por ID)
         if (crearMisionDTO.getIdFuncionario() != null) {
             logger.info("Buscando funcionario con ID: {}", crearMisionDTO.getIdFuncionario());
             Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(crearMisionDTO.getIdFuncionario());
@@ -90,19 +91,19 @@ public class MisionService {
             logger.warn("ID de funcionario no proporcionado en el DTO.");
         }
 
-        // Relación con Caso
-        if (crearMisionDTO.getIdCaso() != null) {
-            logger.info("Buscando caso con ID: {}", crearMisionDTO.getIdCaso());
-            Optional<Caso> casoOptional = casoRepository.findById(crearMisionDTO.getIdCaso());
+        // Relación con Caso (¡Modificado para buscar por codigoCaso!)
+        if (crearMisionDTO.getNumeroCaso() != null && !crearMisionDTO.getNumeroCaso().isEmpty()) {
+            logger.info("Buscando caso con código: {}", crearMisionDTO.getNumeroCaso());
+            Optional<Caso> casoOptional = casoRepository.findByCodigoCaso(crearMisionDTO.getNumeroCaso());
             casoOptional.ifPresent(caso -> {
                 nuevaMision.setCaso(caso);
                 logger.info("Caso encontrado: {}", caso);
             });
             if (!casoOptional.isPresent()) {
-                logger.warn("No se encontró caso con ID: {}", crearMisionDTO.getIdCaso());
+                logger.warn("No se encontró caso con código: {}", crearMisionDTO.getNumeroCaso());
             }
         } else {
-            logger.warn("ID de caso no proporcionado en el DTO.");
+            logger.warn("Número de caso no proporcionado en el DTO.");
         }
 
         logger.info("Guardando misión en la base de datos: {}", nuevaMision);
@@ -110,7 +111,6 @@ public class MisionService {
         logger.info("Misión guardada exitosamente con ID: {}", misionGuardada.getNumeroMision());
         return misionGuardada;
     }
-
     @Transactional
     public void eliminarMision(Integer numeroMision) {
         misionRepository.findByNumeroMision(numeroMision)
