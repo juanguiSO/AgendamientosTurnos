@@ -188,7 +188,7 @@ public class ReportesController {
 
                 for (Caso caso : casos) {
                     table.addCell(new Cell().add(new Paragraph(caso.getCodigoCaso())));
-                    table.addCell(new Cell().add(new Paragraph(caso.getDelito() != null ? caso.getDelito() : "N/A")));
+                    table.addCell(new Cell().add(new Paragraph(caso.getDelito() != null ? caso.getDelito().getTipoDelito() : "N/A")));
                     table.addCell(new Cell().add(new Paragraph(caso.getActivo() ? "Sí" : "No")));
                 }
                 document.add(table);

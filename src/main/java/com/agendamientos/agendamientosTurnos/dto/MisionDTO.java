@@ -9,11 +9,13 @@ public class MisionDTO {
     private String numeroCaso;
     private Integer idCaso; // Nuevo campo para el ID del caso
     private Boolean activo;
+    private Integer idEspecialidad;
+    private String especialidad;
 
     public MisionDTO() {
     }
 
-    public MisionDTO(Integer numeroMision, Integer idFuncionario, String nombreFuncionario, String apellidoFuncionario, String actividades, String numeroCaso, Integer idCaso, Boolean activo) {
+    public MisionDTO(Integer numeroMision, Integer idFuncionario, String nombreFuncionario, String apellidoFuncionario, String actividades, String numeroCaso, Integer idCaso, Boolean activo,Integer idEspecialidad,  String especialidad) {
         this.numeroMision = numeroMision;
         this.idFuncionario = idFuncionario;
         this.nombreFuncionario = nombreFuncionario;
@@ -22,6 +24,8 @@ public class MisionDTO {
         this.numeroCaso = numeroCaso;
         this.idCaso = idCaso;
         this.activo = activo;
+        this.idEspecialidad= idEspecialidad;
+        this.especialidad= especialidad;
     }
 
     public Integer getNumeroMision() {
@@ -86,5 +90,21 @@ public class MisionDTO {
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
+    }
+
+    public void setEspecialidad(String especialidad) {
+        this.especialidad = especialidad;
+    }
+
+    public void setIdEspecialidad(Integer idEspecialidad) {
+        this.idEspecialidad = idEspecialidad;
+    }
+
+    public String getEspecialidad() {
+        return especialidad;
+    }
+
+    public Integer getIdEspecialidad() {
+        return idEspecialidad;
     }
 }

@@ -4,26 +4,28 @@ public class CasoDetalleDTO {
 
     private Integer idCaso;
     private String codigoCaso;
-    private String delito;
+    private Integer idDelito;         // ID del delito
+    private String tipoDelito;       // Tipo del delito
     private String nombreDefensorPublico;
     private String nombreUsuarioVisitado;
-    private Integer idDepartamento; // ID for the department
-    private String nombreDepartamento; // Name of the department
-    private Integer idMunicipio; // ID for the municipality
-    private String nombreMunicipio; // Name of the municipality
+    private Integer idDepartamento;
+    private String nombreDepartamento;
+    private Integer idMunicipio;
+    private String nombreMunicipio;
     private Boolean activo;
 
-    // Default constructor
+    // Constructor por defecto
     public CasoDetalleDTO() {
     }
 
-    // Constructor with all fields
-    public CasoDetalleDTO(Integer idCaso, String codigoCaso, String delito, String nombreDefensorPublico,
-                          String nombreUsuarioVisitado, Integer idDepartamento, String nombreDepartamento,
-                          Integer idMunicipio, String nombreMunicipio, Boolean activo) {
+    // Constructor con todos los campos
+    public CasoDetalleDTO(Integer idCaso, String codigoCaso, Integer idDelito, String tipoDelito,
+                          String nombreDefensorPublico, String nombreUsuarioVisitado, Integer idDepartamento,
+                          String nombreDepartamento, Integer idMunicipio, String nombreMunicipio, Boolean activo) {
         this.idCaso = idCaso;
         this.codigoCaso = codigoCaso;
-        this.delito = delito;
+        this.idDelito = idDelito;
+        this.tipoDelito = tipoDelito;
         this.nombreDefensorPublico = nombreDefensorPublico;
         this.nombreUsuarioVisitado = nombreUsuarioVisitado;
         this.idDepartamento = idDepartamento;
@@ -33,7 +35,8 @@ public class CasoDetalleDTO {
         this.activo = activo;
     }
 
-    // Getters and setters for all fields
+    // Getters y setters para todos los campos
+
     public Integer getIdCaso() {
         return idCaso;
     }
@@ -50,12 +53,20 @@ public class CasoDetalleDTO {
         this.codigoCaso = codigoCaso;
     }
 
-    public String getDelito() {
-        return delito;
+    public Integer getIdDelito() {
+        return idDelito;
     }
 
-    public void setDelito(String delito) {
-        this.delito = delito;
+    public void setIdDelito(Integer idDelito) {
+        this.idDelito = idDelito;
+    }
+
+    public String getTipoDelito() {
+        return tipoDelito;
+    }
+
+    public void setTipoDelito(String tipoDelito) {
+        this.tipoDelito = tipoDelito;
     }
 
     public String getNombreDefensorPublico() {

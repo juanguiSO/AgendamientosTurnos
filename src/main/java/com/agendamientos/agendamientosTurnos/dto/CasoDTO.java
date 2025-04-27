@@ -4,7 +4,8 @@ public class CasoDTO {
 
     private Integer idCaso;
     private String codigoCaso;
-    private String delito;
+    //private String delito;
+    private Integer idDelito;
     private String nombreDefensorPublico;
     private String nombreUsuarioVisitado;
     private Integer idDepartamento; // <-- Cambiado a Integer
@@ -16,11 +17,12 @@ public class CasoDTO {
     }
 
     // Constructor con todos los campos
-    public CasoDTO(Integer idCaso, String codigoCaso, String delito, String nombreDefensorPublico,
+    public CasoDTO(Integer idCaso, String codigoCaso, Integer idDelito,String nombreDefensorPublico,
                    String nombreUsuarioVisitado, Integer idDepartamento, Integer idMunicipio, Boolean activo) {
         this.idCaso = idCaso;
         this.codigoCaso = codigoCaso;
-        this.delito = delito;
+        //this.delito = delito;
+        this.idDelito= idDelito;
         this.nombreDefensorPublico = nombreDefensorPublico;
         this.nombreUsuarioVisitado = nombreUsuarioVisitado;
         this.idDepartamento = idDepartamento; // <-- Aquí se asigna el ID del departamento
@@ -44,13 +46,6 @@ public class CasoDTO {
         this.codigoCaso = codigoCaso;
     }
 
-    public String getDelito() {
-        return delito;
-    }
-
-    public void setDelito(String delito) {
-        this.delito = delito;
-    }
 
     public String getNombreDefensorPublico() {
         return nombreDefensorPublico;
@@ -90,5 +85,13 @@ public class CasoDTO {
 
     public void setActivo(Boolean activo) {
         this.activo = activo;
+    }
+
+    public void setIdDelito(Integer idDelito) {
+        this.idDelito = idDelito;
+    }
+
+    public Integer getIdDelito() {
+        return idDelito;
     }
 }

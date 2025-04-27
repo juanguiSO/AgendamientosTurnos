@@ -2,7 +2,7 @@ package com.agendamientos.agendamientosTurnos.dto;
 
 public class CrearMisionDTO {
     private Integer numeroMision; // Número único para la misión
-    private Integer idFuncionario; // ID del Funcionario relacionado
+    private String cedulaFuncionario; // Cédula del Funcionario relacionado (recibida desde el frontend)
     private String actividades; // Descripción de las actividades
     private String numeroCaso; // Código del Caso (reemplaza idCaso)
     private Boolean activo; // Estado activo/inactivo
@@ -12,9 +12,9 @@ public class CrearMisionDTO {
     }
 
     // Constructor con todos los campos
-    public CrearMisionDTO(Integer numeroMision, Integer idFuncionario, String actividades, String numeroCaso, Boolean activo) {
+    public CrearMisionDTO(Integer numeroMision, String cedulaFuncionario, String actividades, String numeroCaso, Boolean activo) {
         this.numeroMision = numeroMision;
-        this.idFuncionario = idFuncionario;
+        this.cedulaFuncionario = cedulaFuncionario;
         this.actividades = actividades;
         this.numeroCaso = numeroCaso;
         this.activo = activo;
@@ -29,12 +29,12 @@ public class CrearMisionDTO {
         this.numeroMision = numeroMision;
     }
 
-    public Integer getIdFuncionario() {
-        return idFuncionario;
+    public String getCedulaFuncionario() {
+        return cedulaFuncionario;
     }
 
-    public void setIdFuncionario(Integer idFuncionario) {
-        this.idFuncionario = idFuncionario;
+    public void setCedulaFuncionario(String cedulaFuncionario) {
+        this.cedulaFuncionario = cedulaFuncionario;
     }
 
     public String getActividades() {

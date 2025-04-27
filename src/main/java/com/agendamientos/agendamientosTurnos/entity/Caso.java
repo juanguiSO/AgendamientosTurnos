@@ -20,8 +20,11 @@ public class Caso {
     @Column(name = "codigo_caso", length = 255)
     private String codigoCaso;
 
-    @Column(name = "delito", length = 255)
-    private String delito;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_delito") // Referencia a la columna de clave foránea
+    private Delito delito;
 
     @Column(name = "nombre_defensor_publico", length = 255)
     private String nombreDefensorPublico;
@@ -58,7 +61,7 @@ public class Caso {
         this.codigoCaso = codigoCaso;
     }
 
-    public void setDelito(String delito) {
+    public void setDelito(Delito delito) {
         this.delito = delito;
     }
 
@@ -82,7 +85,7 @@ public class Caso {
         return codigoCaso;
     }
 
-    public String getDelito() {
+    public Delito getDelito() {
         return delito;
     }
 

@@ -7,6 +7,7 @@ import com.agendamientos.agendamientosTurnos.entity.Caso;
 import com.agendamientos.agendamientosTurnos.entity.Funcionario;
 import com.agendamientos.agendamientosTurnos.entity.Mision;
 import com.agendamientos.agendamientosTurnos.repository.CasoRepository;
+import com.agendamientos.agendamientosTurnos.repository.EspecialidadRepository;
 import com.agendamientos.agendamientosTurnos.repository.FuncionarioRepository;
 import com.agendamientos.agendamientosTurnos.repository.MisionRepository;
 import jakarta.transaction.Transactional;
@@ -26,12 +27,14 @@ public class MisionService {
     private final MisionRepository misionRepository;
     private final FuncionarioRepository funcionarioRepository;
     private final CasoRepository casoRepository;
+    private final EspecialidadRepository especialidadRepository;
 
     @Autowired
-    public MisionService(MisionRepository misionRepository, FuncionarioRepository funcionarioRepository, CasoRepository casoRepository) {
+    public MisionService(MisionRepository misionRepository, FuncionarioRepository funcionarioRepository, CasoRepository casoRepository,EspecialidadRepository especialidadRepository) {
         this.misionRepository = misionRepository;
         this.funcionarioRepository = funcionarioRepository;
         this.casoRepository = casoRepository;
+        this.especialidadRepository =especialidadRepository;
     }
 
     public Optional<Mision> obtenerMisionPorNumero(Integer numeroMision) {
@@ -74,24 +77,24 @@ public class MisionService {
         nuevaMision.setNumeroMision(crearMisionDTO.getNumeroMision());
         nuevaMision.setActividades(crearMisionDTO.getActividades());
         nuevaMision.setActivo(crearMisionDTO.getActivo());
-        logger.info("Nueva misión creada: {}", nuevaMision);
+        logger.info("Nueva misión creada (sin relaciones aún): {}", nuevaMision);
 
-        // Relación con Funcionario (se mantiene igual, buscando por ID)
-        if (crearMisionDTO.getIdFuncionario() != null) {
-            logger.info("Buscando funcionario con ID: {}", crearMisionDTO.getIdFuncionario());
-            Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(crearMisionDTO.getIdFuncionario());
+        // Relación con Funcionario (ahora buscando por cédula)
+        if (crearMisionDTO.getCedulaFuncionario() != null && !crearMisionDTO.getCedulaFuncionario().isEmpty()) {
+            logger.info("Buscando funcionario con cédula: {}", crearMisionDTO.getCedulaFuncionario());
+            Optional<Funcionario> funcionarioOptional = funcionarioRepository.findByCedula(crearMisionDTO.getCedulaFuncionario());
             funcionarioOptional.ifPresent(funcionario -> {
                 nuevaMision.setFuncionario(funcionario);
                 logger.info("Funcionario encontrado: {}", funcionario);
             });
             if (!funcionarioOptional.isPresent()) {
-                logger.warn("No se encontró funcionario con ID: {}", crearMisionDTO.getIdFuncionario());
+                logger.warn("No se encontró funcionario con cédula: {}", crearMisionDTO.getCedulaFuncionario());
             }
         } else {
-            logger.warn("ID de funcionario no proporcionado en el DTO.");
+            logger.warn("Cédula de funcionario no proporcionada en el DTO.");
         }
 
-        // Relación con Caso (¡Modificado para buscar por codigoCaso!)
+        // Relación con Caso (se mantiene la búsqueda por numeroCaso)
         if (crearMisionDTO.getNumeroCaso() != null && !crearMisionDTO.getNumeroCaso().isEmpty()) {
             logger.info("Buscando caso con código: {}", crearMisionDTO.getNumeroCaso());
             Optional<Caso> casoOptional = casoRepository.findByCodigoCaso(crearMisionDTO.getNumeroCaso());
@@ -139,7 +142,9 @@ public class MisionService {
                         m.getActividades(),
                         m.getCaso() != null ? m.getCaso().getCodigoCaso() : "Sin Caso",
                         m.getCaso() != null ? m.getCaso().getIdCaso() : null, // Aquí obtenemos el ID del caso
-                        m.getActivo()))
+                        m.getActivo(),
+                        m.getEspecialidad() != null ? m.getEspecialidad().getIdEspecialidad(): null,
+                        m.getEspecialidad()!= null ? m.getEspecialidad().getEspecialidad():"Sin Especialidad"))
                 .collect(Collectors.toList());
     }
 
@@ -178,15 +183,14 @@ public class MisionService {
                 misionExistente.setActivo(misionDTO.getActivo());
             }
 
-            // Manejar la relación con Funcionario por ID
-           /** if (misionDTO.getIdFuncionario() != null) {
-                Optional<Funcionario> funcionarioOptional = funcionarioRepository.findById(misionDTO.getIdFuncionario());
-                funcionarioOptional.ifPresent(misionExistente::setFuncionario);
-            }*/
 
             if (misionDTO.getNumeroCaso() != null && !misionDTO.getNumeroCaso().isEmpty()) {
                 Optional<Caso> casoOptional = casoRepository.findByCodigoCaso(misionDTO.getNumeroCaso());
                 casoOptional.ifPresent(misionExistente::setCaso);
+            }
+            if (misionDTO.getIdEspecialidad() != null) {
+                especialidadRepository.findById(misionDTO.getIdEspecialidad())
+                        .ifPresent(misionExistente::setEspecialidad);
             }
 
             return Optional.of(misionRepository.save(misionExistente));

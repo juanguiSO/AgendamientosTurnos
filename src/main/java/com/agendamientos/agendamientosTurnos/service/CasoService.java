@@ -3,11 +3,7 @@ package com.agendamientos.agendamientosTurnos.service;
 import com.agendamientos.agendamientosTurnos.dto.CasoDTO;
 import com.agendamientos.agendamientosTurnos.dto.CasoDetalleDTO;
 import com.agendamientos.agendamientosTurnos.entity.*;
-import com.agendamientos.agendamientosTurnos.repository.CasoRepository;
-import com.agendamientos.agendamientosTurnos.repository.DepartamentosRepository;
-import com.agendamientos.agendamientosTurnos.repository.FuncionarioRepository;
-import com.agendamientos.agendamientosTurnos.repository.MunicipioRepository;
-import com.agendamientos.agendamientosTurnos.repository.MisionRepository; // Import MisionRepository
+import com.agendamientos.agendamientosTurnos.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,15 +21,17 @@ public class CasoService {
     private final MunicipioRepository municipioRepository;
     private final DepartamentosRepository departamentosRepository;
     private final FuncionarioRepository funcionarioRepository;
-    private final MisionRepository misionRepository; // Inject MisionRepository
+    private final MisionRepository misionRepository;
+    private final DelitoRepository delitoRepository;// Inject MisionRepository
 
     @Autowired
-    public CasoService(CasoRepository casoRepository, MunicipioRepository municipioRepository, DepartamentosRepository departamentosRepository, FuncionarioRepository funcionarioRepository, MisionRepository misionRepository) {
+    public CasoService(CasoRepository casoRepository, MunicipioRepository municipioRepository, DepartamentosRepository departamentosRepository, FuncionarioRepository funcionarioRepository, MisionRepository misionRepository, DelitoRepository delitoRepository) {
         this.casoRepository = casoRepository;
         this.municipioRepository = municipioRepository;
         this.departamentosRepository = departamentosRepository;
         this.funcionarioRepository = funcionarioRepository;
         this.misionRepository = misionRepository;
+        this.delitoRepository = delitoRepository;
     }
 
     public List<Caso> obtenerCasosPorFuncionarioATravesDeMisiones(Integer funcionarioId) {
@@ -60,9 +58,16 @@ public class CasoService {
         Caso caso = new Caso();
         caso.setActivo(casoDTO.getActivo());
         caso.setCodigoCaso(casoDTO.getCodigoCaso());
-        caso.setDelito(casoDTO.getDelito());
+       // caso.setDelito(casoDTO.getDelito());
         caso.setNombreDefensorPublico(casoDTO.getNombreDefensorPublico());
         caso.setNombreUsuarioVisitado(casoDTO.getNombreUsuarioVisitado());
+
+
+        if (casoDTO.getIdDelito() != null) {
+            Optional<Delito> delitoOptional = delitoRepository.findById(casoDTO.getIdDelito());
+            delitoOptional.ifPresent(caso::setDelito);
+        }
+
 
         // Buscar y establecer las entidades Municipio y Departamentos por ID
         if (casoDTO.getIdMunicipio() != null) {
@@ -153,8 +158,8 @@ public class CasoService {
             if (casoDTO.getCodigoCaso() != null && casoDTO.getCodigoCaso().trim().isEmpty()) {
                 throw new IllegalArgumentException("El código del caso no puede estar vacío.");
             }
-            if (casoDTO.getDelito() != null && casoDTO.getDelito().trim().isEmpty()) {
-                throw new IllegalArgumentException("El delito no puede estar vacío.");
+            if (casoDTO.getIdDelito() != null && casoDTO.getIdDelito() <= 0) {
+                throw new IllegalArgumentException("El ID del delito debe ser un valor positivo.");
             }
             if (casoDTO.getNombreDefensorPublico() != null && casoDTO.getNombreDefensorPublico().trim().isEmpty()) {
                 throw new IllegalArgumentException("El nombre del defensor público no puede estar vacío.");
@@ -169,12 +174,17 @@ public class CasoService {
                 throw new IllegalArgumentException("El ID del departamento debe ser un valor positivo.");
             }
 
-            // Actualizar los campos solo si la validación pasa o si el campo no se proporciona
+            // Actualizar los campos solo si la validación pasa o si el campo se proporciona
             if (casoDTO.getCodigoCaso() != null) {
                 casoExistente.setCodigoCaso(casoDTO.getCodigoCaso());
             }
-            if (casoDTO.getDelito() != null) {
-                casoExistente.setDelito(casoDTO.getDelito());
+            if (casoDTO.getIdDelito() != null) {
+                // Asumiendo que tienes un repositorio para Delito
+                delitoRepository.findById(casoDTO.getIdDelito())
+                        .ifPresentOrElse(
+                                casoExistente::setDelito, // Asegúrate que la entidad Caso tiene un setter para Delito
+                                () -> System.out.println("Delito no encontrado con ID: " + casoDTO.getIdDelito())
+                        );
             }
             if (casoDTO.getNombreDefensorPublico() != null) {
                 casoExistente.setNombreDefensorPublico(casoDTO.getNombreDefensorPublico());
@@ -212,9 +222,13 @@ public class CasoService {
         Caso caso = new Caso();
         caso.setActivo(casoDTO.getActivo());
         caso.setCodigoCaso(casoDTO.getCodigoCaso());
-        caso.setDelito(casoDTO.getDelito());
         caso.setNombreDefensorPublico(casoDTO.getNombreDefensorPublico());
         caso.setNombreUsuarioVisitado(casoDTO.getNombreUsuarioVisitado());
+
+        if(casoDTO.getIdDelito()!= null){
+            delitoRepository.findById(casoDTO.getIdDelito())
+                    .ifPresent((caso::setDelito));
+        }
 
         if (casoDTO.getIdMunicipio() != null) {
             municipioRepository.findById(casoDTO.getIdMunicipio())
@@ -229,11 +243,12 @@ public class CasoService {
     private CasoDTO convertToCasoDTO(Caso caso) {
         Integer idMunicipio = caso.getMunicipio() != null ? caso.getMunicipio().getIdMunicipio() : null;
         Integer idDepartamento = caso.getDepartamento() != null ? caso.getDepartamento().getIdDepartamentos() : null;
+        Integer idDelito =caso.getDelito() != null ? caso.getDelito().getIdDelito():null;
 
         return new CasoDTO(
                 caso.getIdCaso(),
                 caso.getCodigoCaso(),
-                caso.getDelito(),
+                idDelito,
                 caso.getNombreDefensorPublico(),
                 caso.getNombreUsuarioVisitado(),
                 idDepartamento, // <-- Asegúrate de pasar el ID aquí
@@ -253,10 +268,19 @@ public class CasoService {
         CasoDetalleDTO dto = new CasoDetalleDTO();
         dto.setIdCaso(caso.getIdCaso());
         dto.setCodigoCaso(caso.getCodigoCaso());
-        dto.setDelito(caso.getDelito());
         dto.setNombreDefensorPublico(caso.getNombreDefensorPublico());
         dto.setNombreUsuarioVisitado(caso.getNombreUsuarioVisitado());
         dto.setActivo(caso.getActivo());
+
+        // Set both the ID and type of the delito
+        if (caso.getDelito() != null) {
+            Delito delito = delitoRepository.findById(caso.getDelito().getIdDelito()).orElse(null);
+            dto.setIdDelito(delito != null ? delito.getIdDelito() : null);
+            dto.setTipoDelito(delito != null ? delito.getTipoDelito() : "N/A");
+        } else {
+            dto.setIdDelito(null);
+            dto.setTipoDelito("N/A");
+        }
 
         // Set both the ID and name of the department
         if (caso.getDepartamento() != null) {

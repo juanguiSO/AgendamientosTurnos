@@ -30,6 +30,10 @@ public class Mision {
     @JsonIgnore
     private Caso caso;
 
+    @ManyToOne
+    @JoinColumn(name = "id_especialidad")
+    private Especialidad especialidad;
+
     @Column(name = "activo", columnDefinition = "TINYINT(1)")
     private Boolean activo; // Usamos Boolean para permitir valores nulos si la base de datos lo permite
 
@@ -71,5 +75,13 @@ public class Mision {
 
     public void setNumeroMision(Integer numeroMision) {
         this.numeroMision = numeroMision;
+    }
+
+    public void setEspecialidad(Especialidad especialidad) {
+        this.especialidad = especialidad;
+    }
+
+    public Especialidad getEspecialidad() {
+        return especialidad;
     }
 }
