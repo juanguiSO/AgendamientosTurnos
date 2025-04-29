@@ -4,6 +4,7 @@ import com.agendamientos.agendamientosTurnos.dto.CrearMisionDTO;
 import com.agendamientos.agendamientosTurnos.dto.MisionDTO;
 import com.agendamientos.agendamientosTurnos.dto.ReporteFuncionarioCasosDTO;
 import com.agendamientos.agendamientosTurnos.entity.Caso;
+import com.agendamientos.agendamientosTurnos.entity.Especialidad;
 import com.agendamientos.agendamientosTurnos.entity.Funcionario;
 import com.agendamientos.agendamientosTurnos.entity.Mision;
 import com.agendamientos.agendamientosTurnos.repository.CasoRepository;
@@ -107,6 +108,17 @@ public class MisionService {
             }
         } else {
             logger.warn("Número de caso no proporcionado en el DTO.");
+        }
+
+        if (crearMisionDTO.getIdEspecialidad() != null) {
+            logger.info("Buscando especialidad con ID: {}", crearMisionDTO.getIdEspecialidad());
+            Optional<Especialidad> especialidadOptional = especialidadRepository.findById(crearMisionDTO.getIdEspecialidad());
+            especialidadOptional.ifPresent(especialidad -> nuevaMision.setEspecialidad(especialidad));
+            if (!especialidadOptional.isPresent()) {
+                logger.warn("No se encontró especialidad con ID: {}", crearMisionDTO.getIdEspecialidad());
+            }
+        } else {
+            logger.info("ID de especialidad no proporcionado en el DTO.");
         }
 
         logger.info("Guardando misión en la base de datos: {}", nuevaMision);
@@ -234,4 +246,3 @@ public class MisionService {
 
 
 }
-
