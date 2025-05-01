@@ -56,6 +56,7 @@ import java.util.Map;
                     response.put("token", token);
                     response.put("nombre", funcionario.getNombre());
                     response.put("apellido", funcionario.getApellido());
+                    response.put("correo", funcionario.getCorreo());
                     response.put("requiereActualizacion", funcionario.getEsContrasenaPorDefecto());
                     return ResponseEntity.ok(response);
                 } else {
