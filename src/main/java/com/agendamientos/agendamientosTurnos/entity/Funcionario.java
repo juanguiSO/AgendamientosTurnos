@@ -68,6 +68,8 @@ public class Funcionario {
     @Column(name = "id_rol")  // Nuevo campo agregado
     private Integer idRol;    // Foreign Key a Cargo
 
+    @Column(name = "es_contrasena_por_defecto", columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean esContrasenaPorDefecto = true;
 
     public Integer getIdRol() {
         return idRol;
@@ -163,5 +165,13 @@ public class Funcionario {
 
     public Integer getIdFuncionario() {
         return idFuncionario;
+    }
+
+    public Boolean getEsContrasenaPorDefecto() {
+        return esContrasenaPorDefecto;
+    }
+
+    public void setEsContrasenaPorDefecto(Boolean esContrasenaPorDefecto) {
+        this.esContrasenaPorDefecto = esContrasenaPorDefecto;
     }
 }
