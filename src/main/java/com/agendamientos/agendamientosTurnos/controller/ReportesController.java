@@ -59,17 +59,17 @@ public class ReportesController {
         com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
         Document document = new Document(pdf);
 
-        Table table = new Table(new float[]{2, 2, 2, 2, 2, 2, 2, 1, 2, 2});
+        Table table = new Table(new float[]{2, 2, 2, 2, 2, 1, 2, 2});
 
         // Añadir encabezados de la tabla
         table.addCell(new Cell().add(new Paragraph("Cédula")));
         table.addCell(new Cell().add(new Paragraph("Nombre")));
         table.addCell(new Cell().add(new Paragraph("Apellido")));
-        table.addCell(new Cell().add(new Paragraph("Correo")));
+//        table.addCell(new Cell().add(new Paragraph("Correo")));
         table.addCell(new Cell().add(new Paragraph("Teléfono")));
         table.addCell(new Cell().add(new Paragraph("Especialidad")));
-        table.addCell(new Cell().add(new Paragraph("Grado")));
-        table.addCell(new Cell().add(new Paragraph("Activo")));
+        table.addCell(new Cell().add(new Paragraph("G")));
+//        table.addCell(new Cell().add(new Paragraph("Activo")));
         table.addCell(new Cell().add(new Paragraph("Cargo")));
         table.addCell(new Cell().add(new Paragraph("Rol")));
 
@@ -78,11 +78,11 @@ public class ReportesController {
             table.addCell(new Cell().add(new Paragraph(funcionario.getCedula())));
             table.addCell(new Cell().add(new Paragraph(funcionario.getNombre())));
             table.addCell(new Cell().add(new Paragraph(funcionario.getApellido())));
-            table.addCell(new Cell().add(new Paragraph(funcionario.getCorreo())));
+//            table.addCell(new Cell().add(new Paragraph(funcionario.getCorreo())));
             table.addCell(new Cell().add(new Paragraph(funcionario.getTelefono())));
             table.addCell(new Cell().add(new Paragraph(funcionario.getEspecialidad() != null ? funcionario.getEspecialidad() : "N/A")));
             table.addCell(new Cell().add(new Paragraph(funcionario.getGrado() != null ? funcionario.getGrado() : "N/A")));
-            table.addCell(new Cell().add(new Paragraph(funcionario.getActivo() == 1 ? "Sí" : "No")));
+//            table.addCell(new Cell().add(new Paragraph(funcionario.getActivo() == 1 ? "Sí" : "No")));
             table.addCell(new Cell().add(new Paragraph(funcionario.getCargo() != null ? funcionario.getCargo() : "N/A")));
             table.addCell(new Cell().add(new Paragraph(funcionario.getRol() != null ? funcionario.getRol() : "N/A")));
         }
@@ -107,9 +107,11 @@ public class ReportesController {
         return generarReporte("attachment");
     }
 
-    @GetMapping("/funcionarios/{funcionarioId}/misiones")
-    public ResponseEntity<byte[]> generarReporteMisionesPorFuncionario(@PathVariable Integer funcionarioId) throws Exception {
-        Optional<Funcionario> funcionarioOptional = funcionarioService.getFuncionarioById(funcionarioId);
+
+
+    @GetMapping("/funcionarios/{funcionarioCedula}/misiones")
+    public ResponseEntity<byte[]> generarReporteMisionesPorFuncionario(@PathVariable String funcionarioCedula) throws Exception {
+        Optional<Funcionario> funcionarioOptional = funcionarioService.getFuncionarioByCedula(funcionarioCedula);
         if (!funcionarioOptional.isPresent()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
@@ -153,6 +155,47 @@ public class ReportesController {
 
         return new ResponseEntity<>(outputStream.toByteArray(), headers, HttpStatus.OK);
     }
+
+    @GetMapping("/funcionarios/{funcionarioCedula}/misiones/descargar")
+    public ResponseEntity<byte[]> descargarReporteMisionesPorFuncionario(@PathVariable String funcionarioCedula) throws Exception {
+        Optional<Funcionario> funcionarioOptional = funcionarioService.getFuncionarioByCedula(funcionarioCedula);
+        if (!funcionarioOptional.isPresent()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        Funcionario funcionario = funcionarioOptional.get();
+
+        List<Mision> misiones = misionService.obtenerMisionesPorFuncionario(funcionario);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
+        Document document = new Document(pdf);
+
+        document.add(new Paragraph("Reporte de Misiones del Funcionario: " + funcionario.getNombre() + " " + funcionario.getApellido()));
+        document.add(new Paragraph(" "));
+
+        Table table = new Table(new float[]{2, 3, 2, 1});
+        table.addCell(new Cell().add(new Paragraph("Número Misión")));
+        table.addCell(new Cell().add(new Paragraph("Actividades")));
+        table.addCell(new Cell().add(new Paragraph("Caso")));
+        table.addCell(new Cell().add(new Paragraph("Activo")));
+
+        for (Mision mision : misiones) {
+            table.addCell(new Cell().add(new Paragraph(mision.getNumeroMision().toString())));
+            table.addCell(new Cell().add(new Paragraph(mision.getActividades() != null ? mision.getActividades() : "N/A")));
+            table.addCell(new Cell().add(new Paragraph(mision.getCaso() != null ? mision.getCaso().getCodigoCaso() : "N/A")));
+            table.addCell(new Cell().add(new Paragraph(mision.getActivo() ? "Sí" : "No")));
+        }
+
+        document.add(table);
+        document.close();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "reporte_misiones_" + funcionario.getCedula() + ".pdf");
+
+        return new ResponseEntity<>(outputStream.toByteArray(), headers, HttpStatus.OK);
+    }
+
     @GetMapping("/casos-por-funcionario/pdf")
     public ResponseEntity<byte[]> generarReporteCasosPorFuncionarioPdf() {
         Map<Funcionario, List<Caso>> datosReporte = reporteService.obtenerCasosPorFuncionario();

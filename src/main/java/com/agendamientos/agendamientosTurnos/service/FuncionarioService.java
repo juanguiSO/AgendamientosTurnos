@@ -128,7 +128,9 @@ public class FuncionarioService {
         return  rolOptional.map(Rol::getNombre).orElse(null);
     }
 
-
+    public Optional<Funcionario> getFuncionarioByCedula(String cedula){
+        return funcionarioRepository.findByCedula(cedula);
+    }
 
     public Optional<Funcionario> getFuncionarioById(Integer id) {
         return funcionarioRepository.findById(id);
