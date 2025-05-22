@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -10,6 +11,7 @@ import lombok.Setter;
 @Getter
 @Data
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "vehiculo")
 public class Vehiculo {
 

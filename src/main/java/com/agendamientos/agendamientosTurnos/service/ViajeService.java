@@ -115,7 +115,6 @@ public class ViajeService {
             Viaje viaje = optionalViaje.get();
 
             // Actualiza los campos simples
-            viaje.setEstado(viajeDetails.isEstado());
             viaje.setTiempoFin(viajeDetails.getTiempoFin());
             viaje.setTiempoInicio(viajeDetails.getTiempoInicio());
             viaje.setDistanciaRecorrida(viajeDetails.getDistanciaRecorrida()); // Actualiza la distancia

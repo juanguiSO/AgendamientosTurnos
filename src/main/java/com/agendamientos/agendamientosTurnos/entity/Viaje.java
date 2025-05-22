@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Setter
 @Getter
@@ -21,9 +22,7 @@ public class Viaje {
     @Column(name = "id_viaje")
     private Integer idViaje;
 
-    @NotNull(message = "El estado del viaje no puede ser nulo")
-    @Column(name = "estado", columnDefinition = "TINYINT(1) DEFAULT 0")
-    private boolean estado;
+
 
     @Column(name = "tiempo_fin")
     private LocalDateTime tiempoFin;
@@ -43,6 +42,9 @@ public class Viaje {
     @JoinColumn(name = "id_vehiculo", referencedColumnName = "id_vehiculo", nullable = false)
     private Vehiculo vehiculo;
 
+    @OneToMany(mappedBy = "viaje")
+    private List<Caso> casos;
+
     // El campo 'viatico' ahora será calculado por la lógica de negocio
     @Column(name = "viatico", columnDefinition = "TINYINT(1) DEFAULT 0")
     private boolean viatico;
@@ -57,8 +59,8 @@ public class Viaje {
     }
 
     // Constructor actualizado para incluir distanciaRecorrida
-    public Viaje(boolean estado, LocalDateTime tiempoFin, LocalDateTime tiempoInicio, Double distanciaRecorrida, Vehiculo vehiculo, boolean viatico, EstadoViaje estadoViaje) {
-        this.estado = estado;
+    public Viaje(LocalDateTime tiempoFin, LocalDateTime tiempoInicio, Double distanciaRecorrida, Vehiculo vehiculo, boolean viatico, EstadoViaje estadoViaje) {
+
         this.tiempoFin = tiempoFin;
         this.tiempoInicio = tiempoInicio;
         this.distanciaRecorrida = distanciaRecorrida;
@@ -75,10 +77,7 @@ public class Viaje {
         return idViaje;
     }
 
-    @NotNull(message = "El estado del viaje no puede ser nulo")
-    public boolean isEstado() {
-        return estado;
-    }
+
 
     public @NotNull(message = "El vehículo asociado al viaje no puede ser nulo") Vehiculo getVehiculo() {
         return vehiculo;
@@ -100,9 +99,7 @@ public class Viaje {
         return distanciaRecorrida;
     }
 
-    public void setEstado(@NotNull(message = "El estado del viaje no puede ser nulo") boolean estado) {
-        this.estado = estado;
-    }
+
 
     public void setTiempoFin(LocalDateTime tiempoFin) {
         this.tiempoFin = tiempoFin;
@@ -133,7 +130,6 @@ public class Viaje {
     public String toString() {
         return "Viaje{" +
                 "idViaje=" + idViaje +
-                ", estado=" + estado +
                 ", tiempoFin=" + tiempoFin +
                 ", tiempoInicio=" + tiempoInicio +
                 ", distanciaRecorrida=" + distanciaRecorrida + // Incluir en toString

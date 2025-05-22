@@ -48,6 +48,17 @@ public class Caso {
     @OneToMany(mappedBy = "caso")
     private List<Mision> misiones;
 
+    @ManyToOne
+    @JoinColumn(name = "id_viaje")
+    private Viaje viaje;
+
+    public Viaje getViaje() {
+        return viaje;
+    }
+
+    public void setViaje(Viaje viaje) {
+        this.viaje = viaje;
+    }
 
     public void setActivo(Boolean activo) {
         this.activo = activo;

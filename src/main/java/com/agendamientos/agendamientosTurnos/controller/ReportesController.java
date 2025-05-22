@@ -23,6 +23,7 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+import com.itextpdf.kernel.geom.PageSize; // Importar PageSize
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -40,24 +41,21 @@ public class ReportesController {
     private final CasoService casoService;
 
 
-
     @Autowired
     public ReportesController(FuncionarioService funcionarioService, MisionService misionService, ReporteService reporteService,CasoService casoService) {
         this.funcionarioService = funcionarioService;
         this.misionService = misionService;
         this.reporteService = reporteService;
         this.casoService = casoService;
-
-
     }
-
 
     private ResponseEntity<byte[]> generarReporte(String disposition) throws Exception {
         List<FuncionarioDTO> funcionarios = funcionarioService.getAllFuncionarios();
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
-        Document document = new Document(pdf);
+        // Cambiar la orientación a horizontal (landscape)
+        Document document = new Document(pdf, PageSize.A4.rotate()); // Aquí se rota la página
 
         Table table = new Table(new float[]{2, 2, 2, 2, 2, 1, 2, 2});
 
@@ -68,7 +66,7 @@ public class ReportesController {
 //        table.addCell(new Cell().add(new Paragraph("Correo")));
         table.addCell(new Cell().add(new Paragraph("Teléfono")));
         table.addCell(new Cell().add(new Paragraph("Especialidad")));
-        table.addCell(new Cell().add(new Paragraph("G")));
+        table.addCell(new Cell().add(new Paragraph("Grado")));
 //        table.addCell(new Cell().add(new Paragraph("Activo")));
         table.addCell(new Cell().add(new Paragraph("Cargo")));
         table.addCell(new Cell().add(new Paragraph("Rol")));
@@ -108,7 +106,6 @@ public class ReportesController {
     }
 
 
-
     @GetMapping("/funcionarios/{funcionarioCedula}/misiones")
     public ResponseEntity<byte[]> generarReporteMisionesPorFuncionario(@PathVariable String funcionarioCedula) throws Exception {
         Optional<Funcionario> funcionarioOptional = funcionarioService.getFuncionarioByCedula(funcionarioCedula);
@@ -123,7 +120,8 @@ public class ReportesController {
         // 3. Generar el PDF con la información del funcionario y sus misiones
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
-        Document document = new Document(pdf);
+        // Cambiar la orientación a horizontal (landscape)
+        Document document = new Document(pdf, PageSize.A4.rotate()); // Aquí se rota la página
 
         // Añadir información del funcionario al documento (opcional)
         document.add(new Paragraph("Reporte de Misiones del Funcionario: " + funcionario.getNombre() + " " + funcionario.getApellido()));
@@ -168,7 +166,8 @@ public class ReportesController {
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
-        Document document = new Document(pdf);
+        // Cambiar la orientación a horizontal (landscape)
+        Document document = new Document(pdf, PageSize.A4.rotate()); // Aquí se rota la página
 
         document.add(new Paragraph("Reporte de Misiones del Funcionario: " + funcionario.getNombre() + " " + funcionario.getApellido()));
         document.add(new Paragraph(" "));
@@ -211,7 +210,8 @@ public class ReportesController {
     private byte[] generarPdfCasosPorFuncionario(Map<Funcionario, List<Caso>> datos) {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
-        Document document = new Document(pdf);
+        // Cambiar la orientación a horizontal (landscape)
+        Document document = new Document(pdf, PageSize.A4.rotate()); // Aquí se rota la página
 
         document.add(new Paragraph("Reporte de Casos Asignados por Funcionario"));
         document.add(new Paragraph(" "));
@@ -245,6 +245,4 @@ public class ReportesController {
         document.close();
         return outputStream.toByteArray();
     }
-
-
 }
