@@ -1,61 +1,78 @@
 package com.agendamientos.agendamientosTurnos.service;
 
+import com.agendamientos.agendamientosTurnos.dto.ViajeCreationDTO;
+import com.agendamientos.agendamientosTurnos.entity.Caso;
 import com.agendamientos.agendamientosTurnos.entity.EstadoViaje;
 import com.agendamientos.agendamientosTurnos.entity.Viaje;
-import com.agendamientos.agendamientosTurnos.entity.Vehiculo; // Asumo que ya tienes esta entidad
+import com.agendamientos.agendamientosTurnos.entity.Vehiculo;
+import com.agendamientos.agendamientosTurnos.repository.CasoRepository;
 import com.agendamientos.agendamientosTurnos.repository.EstadoViajeRepository;
 import com.agendamientos.agendamientosTurnos.repository.ViajeRepository;
-import com.agendamientos.agendamientosTurnos.repository.VehiculoRepository; // Asumo que ya tienes este repositorio
+import com.agendamientos.agendamientosTurnos.repository.VehiculoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-@Service // Indica que esta clase es un componente de servicio de Spring
+@Service
 public class ViajeService {
 
-    // Constante para el umbral de distancia para viáticos
     private static final double DISTANCIA_UMBRAL_VIATICO = 60.0;
 
-    @Autowired
-    private ViajeRepository viajeRepository;
+    private final ViajeRepository viajeRepository;
+    private final CasoRepository casoRepository;
+    private final EstadoViajeRepository estadoViajeRepository;
+    private final VehiculoRepository vehiculoRepository;
 
     @Autowired
-    private EstadoViajeRepository estadoViajeRepository;
-
-    // Se mantiene 'required = false' si VehiculoRepository no está 100% listo,
-    // pero en un entorno de producción deberías asegurar su existencia y quitarlo.
-    @Autowired(required = false)
-    private VehiculoRepository vehiculoRepository;
-
-    /**
-     * Obtiene una lista de todos los viajes.
-     *
-     * @return Una lista de objetos Viaje.
-     */
-    public List<Viaje> findAll() {
-        return viajeRepository.findAll();
+    public ViajeService(
+            ViajeRepository viajeRepository,
+            CasoRepository casoRepository,
+            EstadoViajeRepository estadoViajeRepository,
+            VehiculoRepository vehiculoRepository
+    ) {
+        this.viajeRepository = viajeRepository;
+        this.casoRepository = casoRepository;
+        this.estadoViajeRepository = estadoViajeRepository;
+        this.vehiculoRepository = vehiculoRepository;
     }
 
     /**
-     * Obtiene un viaje por su ID.
+     * Obtiene una lista de todos los viajes activos.
+     * Utiliza el método findByActivo del repositorio para mayor eficiencia.
+     *
+     * @return Una lista de objetos Viaje activos.
+     */
+    public List<Viaje> findAll() {
+        return viajeRepository.findByActivo(true);
+    }
+
+    /**
+     * Obtiene un viaje por su ID, solo si está activo.
+     * Utiliza el método findByIdViajeAndActivo del repositorio para mayor eficiencia.
      *
      * @param id El ID del viaje.
-     * @return Un Optional que contiene el Viaje si se encuentra, o un Optional vacío si no.
+     * @return Un Optional que contiene el Viaje si se encuentra y está activo, o un Optional vacío si no.
      */
     public Optional<Viaje> findById(Integer id) {
-        return viajeRepository.findById(id);
+        return viajeRepository.findByIdViajeAndActivo(id, true);
     }
 
     /**
      * Guarda un nuevo viaje o actualiza uno existente.
      * Aplica la lógica para el cálculo de viáticos y valida las relaciones con EstadoViaje y Vehiculo.
+     * Este método está pensado para guardar/actualizar un Viaje sin considerar la asignación de Casos
+     * en el mismo paso. Para la creación inicial con asignación de casos, usa 'crearViajeYAsignarCasos'.
      *
      * @param viaje El objeto Viaje a guardar.
      * @return El objeto Viaje guardado/actualizado.
      * @throws RuntimeException Si el EstadoViaje o Vehiculo asociados no existen, o si falta alguno.
      */
+    @Transactional
     public Viaje save(Viaje viaje) {
         // Validar y asignar la relación con EstadoViaje
         if (viaje.getEstadoViaje() != null && viaje.getEstadoViaje().getIdEstadoViaje() != null) {
@@ -63,63 +80,83 @@ public class ViajeService {
             if (existingEstadoViaje.isEmpty()) {
                 throw new RuntimeException("El EstadoViaje con ID " + viaje.getEstadoViaje().getIdEstadoViaje() + " no existe.");
             }
-            viaje.setEstadoViaje(existingEstadoViaje.get()); // Asigna el objeto gestionado por JPA
+            viaje.setEstadoViaje(existingEstadoViaje.get());
         } else {
             throw new RuntimeException("Se debe proporcionar un EstadoViaje para el viaje.");
         }
 
-        // Validar y asignar la relación con Vehiculo (solo si el repositorio está disponible)
-        if (vehiculoRepository != null) {
-            if (viaje.getVehiculo() != null && viaje.getVehiculo().getIdVehiculo() != null) {
-                Optional<Vehiculo> existingVehiculo = vehiculoRepository.findById(viaje.getVehiculo().getIdVehiculo());
-                if (existingVehiculo.isEmpty()) {
-                    throw new RuntimeException("El Vehiculo con ID " + viaje.getVehiculo().getIdVehiculo() + " no existe.");
-                }
-                viaje.setVehiculo(existingVehiculo.get()); // Asigna el objeto gestionado por JPA
-            } else {
-                throw new RuntimeException("Se debe proporcionar un Vehiculo para el viaje.");
+        // Validar y asignar la relación con Vehiculo
+        if (viaje.getVehiculo() != null && viaje.getVehiculo().getIdVehiculo() != null) {
+            Optional<Vehiculo> existingVehiculo = vehiculoRepository.findById(viaje.getVehiculo().getIdVehiculo());
+            if (existingVehiculo.isEmpty()) {
+                throw new RuntimeException("El Vehiculo con ID " + viaje.getVehiculo().getIdVehiculo() + " no existe.");
             }
+            viaje.setVehiculo(existingVehiculo.get());
+        } else {
+            throw new RuntimeException("Se debe proporcionar un Vehiculo para el viaje.");
         }
 
-        // Lógica para calcular el viático basado en la distancia recorrida
         viaje.setViatico(calcularViatico(viaje.getDistanciaRecorrida()));
+        viaje.setActivo(true); // Asegurarse de que un nuevo viaje siempre se cree como activo
 
         return viajeRepository.save(viaje);
     }
 
     /**
-     * Elimina un viaje por su ID.
+     * Realiza un borrado lógico de un viaje por su ID.
+     * Establece el campo 'activo' a false en lugar de eliminar el registro físicamente.
      *
-     * @param id El ID del viaje a eliminar.
-     * @throws RuntimeException Si el viaje no es encontrado.
+     * @param id El ID del viaje a "eliminar" lógicamente.
+     * @throws RuntimeException Si el viaje no es encontrado o ya está inactivo.
      */
+    @Transactional
     public void deleteById(Integer id) {
-        if (!viajeRepository.existsById(id)) {
+        // Usa findById normal para encontrar el viaje, incluso si está inactivo,
+        // para poder lanzar una excepción más específica si ya lo está.
+        Optional<Viaje> optionalViaje = viajeRepository.findById(id);
+        if (optionalViaje.isPresent()) {
+            Viaje viaje = optionalViaje.get();
+            if (!viaje.isActivo()) {
+                throw new RuntimeException("El viaje con ID " + id + " ya está inactivo.");
+            }
+            viaje.setActivo(false); // Marcar como inactivo
+            viajeRepository.save(viaje); // Guardar el cambio
+            System.out.println("Viaje ID " + id + " marcado como inactivo (borrado lógico).");
+        } else {
             throw new RuntimeException("Viaje no encontrado con ID: " + id);
         }
-        viajeRepository.deleteById(id);
     }
 
     /**
      * Actualiza un viaje existente.
      * Aplica la lógica para el cálculo de viáticos y valida las relaciones con EstadoViaje y Vehiculo.
+     * Solo permite la actualización si el viaje está activo.
      *
      * @param id El ID del viaje a actualizar.
      * @param viajeDetails El objeto Viaje con los detalles actualizados.
      * @return El objeto Viaje actualizado.
-     * @throws RuntimeException Si el viaje no es encontrado, o si las entidades relacionadas no existen o faltan.
+     * @throws RuntimeException Si el viaje no es encontrado, ya está inactivo, o si las entidades relacionadas no existen o faltan.
      */
+    @Transactional
     public Viaje update(Integer id, Viaje viajeDetails) {
+        // Usa findById normal para encontrar el viaje, incluso si está inactivo,
+        // para poder lanzar una excepción más específica si ya lo está.
         Optional<Viaje> optionalViaje = viajeRepository.findById(id);
         if (optionalViaje.isPresent()) {
             Viaje viaje = optionalViaje.get();
 
-            // Actualiza los campos simples
+            // Solo permitir la actualización si el viaje está activo
+            if (!viaje.isActivo()) {
+                throw new RuntimeException("No se puede actualizar un viaje inactivo con ID: " + id);
+            }
+
             viaje.setTiempoFin(viajeDetails.getTiempoFin());
             viaje.setTiempoInicio(viajeDetails.getTiempoInicio());
-            viaje.setDistanciaRecorrida(viajeDetails.getDistanciaRecorrida()); // Actualiza la distancia
+            viaje.setDistanciaRecorrida(viajeDetails.getDistanciaRecorrida());
+            // El campo 'estado' fue removido de la entidad Viaje en una interacción anterior,
+            // por lo que la línea de asignación de 'estado' se elimina aquí.
+            // viaje.setEstado(viajeDetails.getEstado());
 
-            // Recalcular el viático basado en la nueva distancia recorrida
             viaje.setViatico(calcularViatico(viaje.getDistanciaRecorrida()));
 
             // Actualizar la relación con EstadoViaje
@@ -133,17 +170,15 @@ public class ViajeService {
                 throw new RuntimeException("Se debe proporcionar un EstadoViaje para actualizar el viaje.");
             }
 
-            // Actualizar la relación con Vehiculo (solo si el repositorio está disponible)
-            if (vehiculoRepository != null) {
-                if (viajeDetails.getVehiculo() != null && viajeDetails.getVehiculo().getIdVehiculo() != null) {
-                    Optional<Vehiculo> existingVehiculo = vehiculoRepository.findById(viajeDetails.getVehiculo().getIdVehiculo());
-                    if (existingVehiculo.isEmpty()) {
-                        throw new RuntimeException("El Vehiculo con ID " + viajeDetails.getVehiculo().getIdVehiculo() + " no existe para la actualización.");
-                    }
-                    viaje.setVehiculo(existingVehiculo.get());
-                } else {
-                    throw new RuntimeException("Se debe proporcionar un Vehiculo para actualizar el viaje.");
+            // Actualizar la relación con Vehiculo
+            if (viajeDetails.getVehiculo() != null && viajeDetails.getVehiculo().getIdVehiculo() != null) {
+                Optional<Vehiculo> existingVehiculo = vehiculoRepository.findById(viajeDetails.getVehiculo().getIdVehiculo());
+                if (existingVehiculo.isEmpty()) {
+                    throw new RuntimeException("El Vehiculo con ID " + viajeDetails.getVehiculo().getIdVehiculo() + " no existe para la actualización.");
                 }
+                viaje.setVehiculo(existingVehiculo.get());
+            } else {
+                throw new RuntimeException("Se debe proporcionar un Vehiculo para actualizar el viaje.");
             }
 
             return viajeRepository.save(viaje);
@@ -159,7 +194,113 @@ public class ViajeService {
      * @return true si la distancia recorrida es mayor que el umbral de viático, false en caso contrario.
      */
     private boolean calcularViatico(Double distanciaRecorrida) {
-        // Si la distancia es nula, se asume que no hay viático.
         return distanciaRecorrida != null && distanciaRecorrida > DISTANCIA_UMBRAL_VIATICO;
+    }
+
+    /**
+     * Crea un nuevo viaje y lo asigna a una lista de casos existentes.
+     *
+     * @param viajeDTO El DTO que contiene los detalles del viaje y los IDs de los casos a asignar.
+     * @return El objeto Viaje guardado con sus casos asignados.
+     * @throws RuntimeException Si el EstadoViaje o Vehiculo asociados no existen, o si un Caso no es encontrado.
+     */
+    @Transactional
+    public Viaje crearViajeYAsignarCasos(ViajeCreationDTO viajeDTO) {
+        Viaje nuevoViaje = new Viaje();
+        nuevoViaje.setTiempoInicio(viajeDTO.getTiempoInicio());
+        nuevoViaje.setTiempoFin(viajeDTO.getTiempoFin());
+        nuevoViaje.setDistanciaRecorrida(viajeDTO.getDistanciaRecorrida());
+        // El campo 'estado' fue removido de la entidad Viaje en una interacción anterior,
+        // por lo que la línea de asignación de 'estado' se elimina aquí.
+        // nuevoViaje.setEstado(viajeDTO.getEstado());
+
+        // Validar y asignar la relación con EstadoViaje
+        if (viajeDTO.getIdEstadoViaje() != null) {
+            Optional<EstadoViaje> existingEstadoViaje = estadoViajeRepository.findById(viajeDTO.getIdEstadoViaje());
+            if (existingEstadoViaje.isEmpty()) {
+                throw new RuntimeException("El EstadoViaje con ID " + viajeDTO.getIdEstadoViaje() + " no existe.");
+            }
+            nuevoViaje.setEstadoViaje(existingEstadoViaje.get());
+        } else {
+            throw new RuntimeException("Se debe proporcionar un EstadoViaje para el viaje.");
+        }
+
+        // Validar y asignar la relación con Vehiculo
+        if (viajeDTO.getIdVehiculo() != null) {
+            Optional<Vehiculo> existingVehiculo = vehiculoRepository.findById(viajeDTO.getIdVehiculo());
+            if (existingVehiculo.isEmpty()) {
+                throw new RuntimeException("El Vehiculo con ID " + viajeDTO.getIdVehiculo() + " no existe.");
+            }
+            nuevoViaje.setVehiculo(existingVehiculo.get());
+        } else {
+            throw new RuntimeException("Se debe proporcionar un Vehiculo para el viaje.");
+        }
+
+        nuevoViaje.setViatico(calcularViatico(nuevoViaje.getDistanciaRecorrida()));
+        nuevoViaje.setActivo(true); // Asegurarse de que un nuevo viaje siempre se cree como activo
+
+        Viaje viajeGuardado = viajeRepository.save(nuevoViaje);
+
+        if (viajeDTO.getIdCasos() != null && !viajeDTO.getIdCasos().isEmpty()) {
+            for (Integer idCaso : viajeDTO.getIdCasos()) {
+                Optional<Caso> casoOptional = casoRepository.findById(idCaso);
+                if (casoOptional.isPresent()) {
+                    Caso caso = casoOptional.get();
+                    caso.setViaje(viajeGuardado);
+                    casoRepository.save(caso);
+                    // Asegurarse de que la lista 'casos' esté inicializada antes de añadir
+                    if (viajeGuardado.getCasos() == null) {
+                        viajeGuardado.setCasos(new ArrayList<>());
+                    }
+                    viajeGuardado.getCasos().add(caso); // Añadir directamente a la lista
+                } else {
+                    System.err.println("Advertencia: Caso con ID " + idCaso + " no encontrado para asignación al viaje.");
+                }
+            }
+        }
+
+        return viajeGuardado;
+    }
+
+    /**
+     * Asigna o reasigna una lista de casos a un viaje existente.
+     * Los casos que ya no estén en la lista proporcionada serán desvinculados del viaje.
+     * Solo permite la asignación si el viaje está activo.
+     *
+     * @param idViaje El ID del viaje al que se asignarán los casos.
+     * @param idCasosAAsignar La lista de IDs de casos que deben estar asociados a este viaje.
+     * @return El objeto Viaje actualizado.
+     * @throws RuntimeException Si el viaje o alguno de los casos no es encontrado, o si el viaje está inactivo.
+     */
+    @Transactional
+    public Viaje asignarCasosExistentesAViaje(Integer idViaje, List<Integer> idCasosAAsignar) {
+        Viaje viaje = viajeRepository.findById(idViaje)
+                .orElseThrow(() -> new RuntimeException("Viaje no encontrado con ID: " + idViaje));
+
+        // Solo permitir la asignación si el viaje está activo
+        if (!viaje.isActivo()) {
+            throw new RuntimeException("No se pueden asignar casos a un viaje inactivo con ID: " + idViaje);
+        }
+
+        List<Caso> casosActualesDelViaje = casoRepository.findByViaje(viaje);
+
+        for (Caso caso : casosActualesDelViaje) {
+            if (!idCasosAAsignar.contains(caso.getIdCaso())) {
+                caso.setViaje(null);
+                casoRepository.save(caso);
+            }
+        }
+
+        if (idCasosAAsignar != null && !idCasosAAsignar.isEmpty()) {
+            for (Integer idCaso : idCasosAAsignar) {
+                Caso caso = casoRepository.findById(idCaso)
+                        .orElseThrow(() -> new RuntimeException("Caso no encontrado con ID: " + idCaso));
+                if (caso.getViaje() == null || !caso.getViaje().equals(viaje)) {
+                    caso.setViaje(viaje);
+                    casoRepository.save(caso);
+                }
+            }
+        }
+        return viaje;
     }
 }
