@@ -11,7 +11,7 @@ public class ViajeCreationDTO {
     private Double distanciaRecorrida;
     private LocalDateTime tiempoInicio;
     private LocalDateTime tiempoFin;
-    private Integer estado;
+
     private List<Integer> idCasos; // Lista de IDs de casos a asignar
 
     // Getters y setters
@@ -63,13 +63,7 @@ public class ViajeCreationDTO {
         this.tiempoFin = tiempoFin;
     }
 
-    public Integer getEstado() {
-        return estado;
-    }
 
-    public void setEstado(Integer estado) {
-        this.estado = estado;
-    }
 
     public List<Integer> getIdCasos() {
         return idCasos;

@@ -48,6 +48,9 @@ public class ViajeService {
      * @return Una lista de objetos Viaje activos.
      */
     public List<Viaje> findAll() {
+        return viajeRepository.findAll();
+    }
+    public List<Viaje> findByActivo() {
         return viajeRepository.findByActivo(true);
     }
 
@@ -127,6 +130,7 @@ public class ViajeService {
         }
     }
 
+
     /**
      * Actualiza un viaje existente.
      * Aplica la lógica para el cálculo de viáticos y valida las relaciones con EstadoViaje y Vehiculo.
@@ -145,10 +149,7 @@ public class ViajeService {
         if (optionalViaje.isPresent()) {
             Viaje viaje = optionalViaje.get();
 
-            // Solo permitir la actualización si el viaje está activo
-            if (!viaje.isActivo()) {
-                throw new RuntimeException("No se puede actualizar un viaje inactivo con ID: " + id);
-            }
+            viaje.setActivo(viajeDetails.isActivo());
 
             viaje.setTiempoFin(viajeDetails.getTiempoFin());
             viaje.setTiempoInicio(viajeDetails.getTiempoInicio());

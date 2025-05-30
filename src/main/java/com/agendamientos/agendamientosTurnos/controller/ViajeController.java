@@ -126,8 +126,7 @@ public class ViajeController {
     @PutMapping("/{id}")
     public ResponseEntity<Viaje> updateViaje(@PathVariable Integer id, @Valid @RequestBody Viaje viajeDetails) {
         try {
-            // The 'viatico' field will be recalculated automatically in the service.
-            // The client must send updated 'distanciaRecorrida'.
+
             Viaje updatedViaje = viajeService.update(id, viajeDetails);
             return new ResponseEntity<>(updatedViaje, HttpStatus.OK);
         } catch (RuntimeException e) {

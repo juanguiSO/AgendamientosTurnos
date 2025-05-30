@@ -38,4 +38,6 @@ public interface ViajeRepository extends JpaRepository<Viaje, Integer> {
      * @return Un Optional que contiene el Viaje si se encuentra y está activo, o un Optional vacío si no.
      */
     Optional<Viaje> findByIdViajeAndActivo(Integer idViaje, boolean activo);
+
+
 }
