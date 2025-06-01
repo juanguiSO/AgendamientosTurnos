@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.service;
 
+import com.agendamientos.agendamientosTurnos.entity.Mision;
 import com.agendamientos.agendamientosTurnos.entity.MisionXViaje;
 import com.agendamientos.agendamientosTurnos.repository.MisionXViajeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,5 +23,12 @@ public class MisionXViajeService {
 
     public List<MisionXViaje> obtenerPorViaje(Long idViaje) {
         return repository.findByViaje_IdViaje(idViaje);
+    }
+
+    public List<Mision> obtenerMisionesPorViaje(Long idViaje) {
+        List<MisionXViaje> relaciones = repository.findByViaje_IdViaje(idViaje);
+        return relaciones.stream()
+                .map(MisionXViaje::getMision)
+                .toList(); // o .collect(Collectors.toList()) si usas Java <17
     }
 }

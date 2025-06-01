@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
+import com.agendamientos.agendamientosTurnos.entity.Mision;
 import com.agendamientos.agendamientosTurnos.entity.MisionXViaje;
 import com.agendamientos.agendamientosTurnos.service.MisionXViajeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,5 +28,11 @@ public class MisionXViajeController {
     @GetMapping("/viaje/{idViaje}")
     public ResponseEntity<List<MisionXViaje>> obtenerPorViaje(@PathVariable Long idViaje) {
         return ResponseEntity.ok(service.obtenerPorViaje(idViaje));
+    }
+
+    @GetMapping("/viaje/{idViaje}/misiones")
+    public ResponseEntity<List<Mision>> obtenerMisionesPorViaje(@PathVariable Long idViaje) {
+        List<Mision> misiones = service.obtenerMisionesPorViaje(idViaje);
+        return ResponseEntity.ok(misiones);
     }
 }

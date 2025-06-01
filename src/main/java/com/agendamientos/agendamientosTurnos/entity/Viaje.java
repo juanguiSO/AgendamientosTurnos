@@ -48,6 +48,9 @@ public class Viaje {
     @Column(name = "viatico", columnDefinition = "TINYINT(1) DEFAULT 0")
     private boolean viatico;
 
+    @Column(name = "observacion", length = 255)
+    private String observacion;
+
     @NotNull(message = "El estado del viaje no puede ser nulo")
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "id_estado_viaje", referencedColumnName = "id_estado_viaje", nullable = false)
@@ -62,7 +65,7 @@ public class Viaje {
     }
 
     // Constructor actualizado para incluir el campo 'activo'
-    public Viaje(LocalDateTime tiempoFin, LocalDateTime tiempoInicio, Double distanciaRecorrida, Vehiculo vehiculo, boolean viatico, EstadoViaje estadoViaje, boolean activo) {
+    public Viaje(LocalDateTime tiempoFin, LocalDateTime tiempoInicio, Double distanciaRecorrida, Vehiculo vehiculo, boolean viatico, EstadoViaje estadoViaje, boolean activo, String observacion) {
         this.tiempoFin = tiempoFin;
         this.tiempoInicio = tiempoInicio;
         this.distanciaRecorrida = distanciaRecorrida;
@@ -70,6 +73,8 @@ public class Viaje {
         this.viatico = viatico;
         this.estadoViaje = estadoViaje;
         this.activo = activo;
+        this.observacion = observacion;
+
     }
 
     // --- Getters y Setters ---
@@ -160,6 +165,15 @@ public class Viaje {
         this.activo = activo;
     }
 
+    public String getObservacion() {
+        return observacion;
+    }
+
+    public void setObservacion(String observacion) {
+        this.observacion = observacion;
+    }
+    @OneToMany(mappedBy = "viaje")
+    private List<MisionXViaje> misionesXViaje;
     @Override
     public String toString() {
         return "Viaje{" +
