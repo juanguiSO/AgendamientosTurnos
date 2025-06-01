@@ -15,6 +15,8 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -72,7 +74,7 @@ public class MisionService {
     }
 
     @Transactional
-    public Mision guardarMision(CrearMisionDTO crearMisionDTO) {
+    public ResponseEntity<?> guardarMision(CrearMisionDTO crearMisionDTO) {
         logger.info("Guardando nueva misión con DTO: {}", crearMisionDTO);
         Mision nuevaMision = new Mision();
         nuevaMision.setNumeroMision(crearMisionDTO.getNumeroMision());
@@ -80,22 +82,37 @@ public class MisionService {
         nuevaMision.setActivo(crearMisionDTO.getActivo());
         logger.info("Nueva misión creada (sin relaciones aún): {}", nuevaMision);
 
-        // Relación con Funcionario (ahora buscando por cédula)
+        // Relación con Funcionario (verificar si ya está asignado al mismo caso)
         if (crearMisionDTO.getCedulaFuncionario() != null && !crearMisionDTO.getCedulaFuncionario().isEmpty()) {
             logger.info("Buscando funcionario con cédula: {}", crearMisionDTO.getCedulaFuncionario());
             Optional<Funcionario> funcionarioOptional = funcionarioRepository.findByCedula(crearMisionDTO.getCedulaFuncionario());
-            funcionarioOptional.ifPresent(funcionario -> {
+
+            if (funcionarioOptional.isPresent()) {
+                Funcionario funcionario = funcionarioOptional.get();
+
+                // Validamos si el funcionario ya está asignado al mismo caso
+                if (crearMisionDTO.getNumeroCaso() != null && !crearMisionDTO.getNumeroCaso().isEmpty()) {
+                    Optional<Mision> misionExistente = misionRepository.findByCasoCodigoCasoAndFuncionarioCedula(
+                            crearMisionDTO.getNumeroCaso(), crearMisionDTO.getCedulaFuncionario());
+
+                    if (misionExistente.isPresent()) {
+                        logger.warn("El funcionario con cédula {} ya está asignado al caso {}",
+                                crearMisionDTO.getCedulaFuncionario(), crearMisionDTO.getNumeroCaso());
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .body(Collections.singletonMap("error", "El funcionario ya está asignado a este caso."));
+                    }
+                }
+
                 nuevaMision.setFuncionario(funcionario);
-                logger.info("Funcionario encontrado: {}", funcionario);
-            });
-            if (!funcionarioOptional.isPresent()) {
+                logger.info("Funcionario asignado: {}", funcionario);
+            } else {
                 logger.warn("No se encontró funcionario con cédula: {}", crearMisionDTO.getCedulaFuncionario());
             }
         } else {
             logger.warn("Cédula de funcionario no proporcionada en el DTO.");
         }
 
-        // Relación con Caso (se mantiene la búsqueda por numeroCaso)
+        // Relación con Caso
         if (crearMisionDTO.getNumeroCaso() != null && !crearMisionDTO.getNumeroCaso().isEmpty()) {
             logger.info("Buscando caso con código: {}", crearMisionDTO.getNumeroCaso());
             Optional<Caso> casoOptional = casoRepository.findByCodigoCaso(crearMisionDTO.getNumeroCaso());
@@ -110,10 +127,11 @@ public class MisionService {
             logger.warn("Número de caso no proporcionado en el DTO.");
         }
 
+        // Relación con Especialidad
         if (crearMisionDTO.getIdEspecialidad() != null) {
             logger.info("Buscando especialidad con ID: {}", crearMisionDTO.getIdEspecialidad());
             Optional<Especialidad> especialidadOptional = especialidadRepository.findById(crearMisionDTO.getIdEspecialidad());
-            especialidadOptional.ifPresent(especialidad -> nuevaMision.setEspecialidad(especialidad));
+            especialidadOptional.ifPresent(nuevaMision::setEspecialidad);
             if (!especialidadOptional.isPresent()) {
                 logger.warn("No se encontró especialidad con ID: {}", crearMisionDTO.getIdEspecialidad());
             }
@@ -124,7 +142,8 @@ public class MisionService {
         logger.info("Guardando misión en la base de datos: {}", nuevaMision);
         Mision misionGuardada = misionRepository.save(nuevaMision);
         logger.info("Misión guardada exitosamente con ID: {}", misionGuardada.getNumeroMision());
-        return misionGuardada;
+
+        return ResponseEntity.ok(misionGuardada);
     }
     @Transactional
     public void eliminarMision(Integer numeroMision) {

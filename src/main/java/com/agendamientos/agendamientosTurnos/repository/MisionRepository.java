@@ -16,6 +16,8 @@ public interface MisionRepository extends JpaRepository<Mision, Integer> {
     @Query("SELECT m.funcionario, m.caso FROM Mision m")
     List<Object[]> findFuncionarioCasoAssignments();
 
+    Optional<Mision> findByCasoCodigoCasoAndFuncionarioCedula(String codigoCaso, String cedulaFuncionario);
+
 
     Optional<Mision> findByNumeroMision(Integer numeroMision);
 

@@ -2,24 +2,28 @@ package com.agendamientos.agendamientosTurnos.dto;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import jakarta.validation.constraints.NotNull; // Para validaciones, si usas Spring Boot Validation
 
-/**
- * DTO de entrada para la creación de un nuevo viaje.
- * Contiene los datos necesarios para el viaje y los IDs de los casos a asociar.
- */
-public class ViajeCreationDTO {
+public class ViajeCreationWithMisionesDTO {
+
+    @NotNull(message = "El tiempo de inicio es obligatorio")
     private LocalDateTime tiempoInicio;
+
+    @NotNull(message = "El tiempo de fin es obligatorio")
     private LocalDateTime tiempoFin;
-    private double distanciaRecorrida;
+
+    private Double distanciaRecorrida; // Puede ser nulo inicialmente
+
+    @NotNull(message = "El ID del estado del viaje es obligatorio")
     private Integer idEstadoViaje;
+
+    @NotNull(message = "El ID del vehículo es obligatorio")
     private Integer idVehiculo;
-    private List<Integer> idCasos; // Lista de IDs de casos a intentar asignar al viaje
 
-    // Constructor vacío (necesario para la deserialización JSON por frameworks como Spring)
-    public ViajeCreationDTO() {}
+    // Nueva lista de IDs de misiones
+    private List<Integer> idMisiones;
 
-    // Getters y Setters para todas las propiedades
-
+    // Getters y Setters
     public LocalDateTime getTiempoInicio() {
         return tiempoInicio;
     }
@@ -36,11 +40,11 @@ public class ViajeCreationDTO {
         this.tiempoFin = tiempoFin;
     }
 
-    public double getDistanciaRecorrida() {
+    public Double getDistanciaRecorrida() {
         return distanciaRecorrida;
     }
 
-    public void setDistanciaRecorrida(double distanciaRecorrida) {
+    public void setDistanciaRecorrida(Double distanciaRecorrida) {
         this.distanciaRecorrida = distanciaRecorrida;
     }
 
@@ -60,11 +64,11 @@ public class ViajeCreationDTO {
         this.idVehiculo = idVehiculo;
     }
 
-    public List<Integer> getIdCasos() {
-        return idCasos;
+    public List<Integer> getIdMisiones() {
+        return idMisiones;
     }
 
-    public void setIdCasos(List<Integer> idCasos) {
-        this.idCasos = idCasos;
+    public void setIdMisiones(List<Integer> idMisiones) {
+        this.idMisiones = idMisiones;
     }
 }

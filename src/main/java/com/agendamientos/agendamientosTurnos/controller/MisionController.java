@@ -77,12 +77,11 @@ public class MisionController {
         return new ResponseEntity<>(misionesActivasPorCaso, HttpStatus.OK);
     }
 
-    @PostMapping("/crear")
-    public ResponseEntity<Mision> guardarNuevaMision(@RequestBody CrearMisionDTO crearMisionDTO) {
-        Mision nuevaMision = misionService.guardarMision(crearMisionDTO);
-        return new ResponseEntity<>(nuevaMision, HttpStatus.CREATED);
-    }
 
+    @PostMapping("/crear")
+    public ResponseEntity<?> guardarNuevaMision(@RequestBody CrearMisionDTO crearMisionDTO) {
+        return misionService.guardarMision(crearMisionDTO);
+    }
 
     @DeleteMapping("/{numeroMision}")
     public ResponseEntity<Void> eliminarMision(@PathVariable Integer numeroMision) {

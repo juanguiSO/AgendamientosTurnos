@@ -1,16 +1,18 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
 import com.agendamientos.agendamientosTurnos.dto.ViajeCreationDTO; // Import the DTO for trip creation with cases
+import com.agendamientos.agendamientosTurnos.dto.ViajeCreationResultDTO;
+import com.agendamientos.agendamientosTurnos.dto.ViajeCreationWithMisionesDTO;
 import com.agendamientos.agendamientosTurnos.entity.Viaje;
 import com.agendamientos.agendamientosTurnos.service.ViajeService;
-import jakarta.validation.Valid; // Keep if you're still validating Viaje entity directly
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map; // Import for the payload of case assignment
+import java.util.Map;
 import java.util.Optional;
 
 @RestController // Indicates that this class is a REST controller
@@ -73,39 +75,41 @@ public class ViajeController {
     }
 
     /**
-     * Endpoint to create a new trip and assign it to existing cases.
-     * Uses ViajeCreationDTO to receive trip details and a list of case IDs.
-     * POST /api/viajes/crear-con-casos
+     * Endpoint para crear un nuevo viaje y asignar casos, manejando la capacidad del vehículo.
+     * Retorna un DTO con el viaje creado y la información sobre misiones no asignadas.
      *
-     * @param viajeDTO The DTO containing trip details and case IDs.
-     * @return ResponseEntity with the created Viaje object or an error status.
+     * @param viajeDTO DTO con los detalles del viaje y los IDs de los casos.
+     * @return ResponseEntity con ViajeCreationResultDTO y el estado HTTP.
      */
-    @PostMapping("/crear-con-casos") // New endpoint for creating a trip with case assignments
-    public ResponseEntity<Viaje> crearViajeConCasos(@Valid @RequestBody ViajeCreationDTO viajeDTO) {
+    @PostMapping("/crear-con-casos") // Endpoint para crear un viaje con asignación de casos (YA ERA ÚNICO)
+    public ResponseEntity<ViajeCreationResultDTO> crearViajeConCasos(@Valid @RequestBody ViajeCreationDTO viajeDTO) {
         try {
-            Viaje newViaje = viajeService.crearViajeYAsignarCasos(viajeDTO);
-            return new ResponseEntity<>(newViaje, HttpStatus.CREATED);
+            // Llama al método de servicio actualizado que devuelve ViajeCreationResultDTO
+            ViajeCreationResultDTO resultDTO = viajeService.crearViajeYAsignarCasos(viajeDTO);
+
+            if (resultDTO.getMisionesNoAsignadasIds() != null && !resultDTO.getMisionesNoAsignadasIds().isEmpty()) {
+                return new ResponseEntity<>(resultDTO, HttpStatus.ACCEPTED);
+            } else {
+                return new ResponseEntity<>(resultDTO, HttpStatus.CREATED);
+            }
+
         } catch (RuntimeException e) {
-            System.err.println("Error creating trip with cases: " + e.getMessage());
+            System.err.println("Error al crear viaje con casos: " + e.getMessage());
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }
     }
 
     /**
      * Original endpoint for creating a trip (without explicit case assignment at creation)
-     * You might choose to keep this if you have scenarios where a trip is created
-     * without immediate case assignment, or remove it if 'crearViajeConCasos'
-     * is the primary way to create trips.
-     * POST /api/viajes
+     * This method now has a unique path to avoid ambiguity.
+     * POST /api/viajes/simple-creation
      *
      * @param viaje The Viaje object to create.
      * @return ResponseEntity with the created Viaje object or an error status.
      */
-    @PostMapping // POST /api/viajes
+    @PostMapping("/simple-creation") // <--- CAMBIO AQUÍ: Ruta única para evitar conflicto
     public ResponseEntity<Viaje> createViaje(@Valid @RequestBody Viaje viaje) {
         try {
-            // The 'viatico' field will be automatically calculated in the service.
-            // The client must send 'distanciaRecorrida'.
             Viaje newViaje = viajeService.save(viaje);
             return new ResponseEntity<>(newViaje, HttpStatus.CREATED);
         } catch (RuntimeException e) {
@@ -126,7 +130,6 @@ public class ViajeController {
     @PutMapping("/{id}")
     public ResponseEntity<Viaje> updateViaje(@PathVariable Integer id, @Valid @RequestBody Viaje viajeDetails) {
         try {
-
             Viaje updatedViaje = viajeService.update(id, viajeDetails);
             return new ResponseEntity<>(updatedViaje, HttpStatus.OK);
         } catch (RuntimeException e) {
@@ -152,7 +155,7 @@ public class ViajeController {
     public ResponseEntity<Viaje> asignarCasosAViaje(@PathVariable Integer idViaje, @RequestBody Map<String, List<Integer>> payload) {
         List<Integer> idCasos = payload.get("idCasos");
         if (idCasos == null) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST); // Or a more specific error message
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         try {
             Viaje viajeActualizado = viajeService.asignarCasosExistentesAViaje(idViaje, idCasos);
@@ -164,6 +167,27 @@ public class ViajeController {
             } else {
                 return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
             }
+        }
+    }
+
+    /**
+     * Endpoint para crear un nuevo viaje y asignarle misiones.
+     * Recibe un ViajeCreationWithMisionesDTO en el cuerpo de la solicitud.
+     * Mapea a POST /api/viajes/con-misiones
+     *
+     * @param viajeDTO El DTO que contiene los datos del viaje y las misiones a asignar.
+     * @return ResponseEntity con ViajeCreationResultDTO y el estado HTTP CREATED (201) si es exitoso,
+     * o un estado de error con un mensaje descriptivo.
+     */
+    @PostMapping("/con-misiones") // <--- CAMBIO AQUÍ: Ruta única para evitar conflicto
+    public ResponseEntity<ViajeCreationResultDTO> crearViajeYAsignarMisiones(
+            @Valid @RequestBody ViajeCreationWithMisionesDTO viajeDTO) {
+        try {
+            ViajeCreationResultDTO result = viajeService.crearViajeYAsignarMisiones(viajeDTO);
+            return new ResponseEntity<>(result, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            ViajeCreationResultDTO errorResult = new ViajeCreationResultDTO(null, null, e.getMessage());
+            return new ResponseEntity<>(errorResult, HttpStatus.BAD_REQUEST);
         }
     }
 }

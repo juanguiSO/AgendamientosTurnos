@@ -39,6 +39,8 @@ public class ReporteService {
         return misionRepository.findByFuncionario(funcionario);
     }
 
+
+
     // Método para generar el PDF (lo implementaremos más adelante)
     public byte[] generarReportePdf(Map<Funcionario, List<Caso>> datos) {
         // Lógica para generar el PDF usando una librería como iText o Apache PDFBox

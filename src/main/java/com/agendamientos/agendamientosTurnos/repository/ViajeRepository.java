@@ -1,10 +1,12 @@
 package com.agendamientos.agendamientosTurnos.repository;
 
 import com.agendamientos.agendamientosTurnos.entity.EstadoViaje;
+import com.agendamientos.agendamientosTurnos.entity.Vehiculo;
 import com.agendamientos.agendamientosTurnos.entity.Viaje;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,4 +42,18 @@ public interface ViajeRepository extends JpaRepository<Viaje, Integer> {
     Optional<Viaje> findByIdViajeAndActivo(Integer idViaje, boolean activo);
 
 
+    /**
+     * Busca viajes para un vehículo específico que se solapen con un rango de tiempo dado.
+     * Esto es útil para verificar la disponibilidad del vehículo.
+     *
+     * @param vehiculo El objeto Vehiculo para el cual se buscan los viajes.
+     * @param tiempoInicioNuevoViaje La fecha y hora de inicio del nuevo viaje.
+     * @param tiempoFinNuevoViaje La fecha y hora de fin del nuevo viaje.
+     * @return Una lista de Viajes existentes que se solapan con el rango de tiempo.
+     */
+    List<Viaje> findByVehiculoAndTiempoFinAfterAndTiempoInicioBefore(
+            Vehiculo vehiculo,
+            LocalDateTime tiempoInicioNuevoViaje,
+            LocalDateTime tiempoFinNuevoViaje
+    );
 }
