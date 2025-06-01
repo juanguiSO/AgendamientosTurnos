@@ -56,4 +56,6 @@ public interface ViajeRepository extends JpaRepository<Viaje, Integer> {
             LocalDateTime tiempoInicioNuevoViaje,
             LocalDateTime tiempoFinNuevoViaje
     );
+
+
 }

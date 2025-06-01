@@ -586,4 +586,173 @@ public class ViajeService {
         // 10. Retornar el resultado encapsulado en el DTO
         return new ViajeCreationResultDTO(viajeGuardado, misionesNoAsignadasIds, mensajeAdicional);
     }
+    @Transactional // Garantiza que todas las operaciones de base de datos se manejen como una única transacción
+    public ViajeCreationResultDTO actualizarViajeYAsignarMisiones(Integer idViaje, ViajeCreationWithMisionesDTO viajeDTO) {
+        // 1. Recuperar el Viaje existente
+        Optional<Viaje> existingViajeOptional = viajeRepository.findById(idViaje);
+        if (existingViajeOptional.isEmpty()) {
+            throw new RuntimeException("El Viaje con ID " + idViaje + " no existe.");
+        }
+        Viaje viajeExistente = existingViajeOptional.get();
+
+        // 2. Actualizar los detalles básicos del Viaje
+        viajeExistente.setTiempoInicio(viajeDTO.getTiempoInicio());
+        viajeExistente.setTiempoFin(viajeDTO.getTiempoFin());
+        viajeExistente.setDistanciaRecorrida(viajeDTO.getDistanciaRecorrida());
+
+        // 3. Validar y asignar el EstadoViaje
+        if (viajeDTO.getIdEstadoViaje() != null) {
+            Optional<EstadoViaje> existingEstadoViaje = estadoViajeRepository.findById(viajeDTO.getIdEstadoViaje());
+            if (existingEstadoViaje.isEmpty()) {
+                throw new RuntimeException("El EstadoViaje con ID " + viajeDTO.getIdEstadoViaje() + " no existe.");
+            }
+            viajeExistente.setEstadoViaje(existingEstadoViaje.get());
+        } else {
+            throw new RuntimeException("Se debe proporcionar un EstadoViaje para el viaje.");
+        }
+
+        // 4. Validar y asignar el Vehículo
+        Vehiculo vehiculoSeleccionado = null;
+        if (viajeDTO.getIdVehiculo() != null) {
+            Optional<Vehiculo> existingVehiculo = vehiculoRepository.findById(viajeDTO.getIdVehiculo());
+            if (existingVehiculo.isEmpty()) {
+                throw new RuntimeException("El Vehiculo con ID " + viajeDTO.getIdVehiculo() + " no existe.");
+            }
+            vehiculoSeleccionado = existingVehiculo.get();
+            viajeExistente.setVehiculo(vehiculoSeleccionado);
+        } else {
+            throw new RuntimeException("Se debe proporcionar un Vehiculo para el viaje.");
+        }
+
+        String placaVehiculo = vehiculoSeleccionado.getPlaca();
+
+        // --- VALIDACIÓN 1: Un vehículo no puede hacer dos viajes en la misma fecha (excluyendo el viaje actual) ---
+        // Busca si ya existe un viaje para este vehículo que se solape con las fechas del viaje a actualizar,
+        // pero excluye el viaje que estamos actualizando.
+        List<Viaje> viajesExistentesParaVehiculo = viajeRepository.findByVehiculoAndTiempoFinAfterAndTiempoInicioBefore(
+                vehiculoSeleccionado, viajeExistente.getTiempoInicio(), viajeExistente.getTiempoFin()
+        );
+
+        // Si se encuentra algún viaje que se solapa y no es el viaje que estamos actualizando, se lanza una excepción.
+        if (viajesExistentesParaVehiculo.stream().anyMatch(v -> !v.getIdViaje().equals(idViaje))) {
+            throw new RuntimeException(
+                    "El vehículo con placa " + placaVehiculo + " ya está programado para otro viaje en el rango de fechas proporcionado."
+            );
+        }
+        // --- FIN DE VALIDACIÓN 1 ---
+
+        // 5. Determinar la capacidad máxima del vehículo
+        Pattern patronCarro = Pattern.compile("^[A-Z]{3}[0-9]{3}$"); // Formato AAA123
+        Pattern patronMoto = Pattern.compile("^[A-Z]{3}[0-9]{2}[A-Z]$"); // Formato AAA23A
+
+        Matcher matcherCarro = patronCarro.matcher(placaVehiculo);
+        Matcher matcherMoto = patronMoto.matcher(placaVehiculo);
+
+        int capacidadMaximaPasajeros; // Representa personas ADICIONALES al conductor
+        String tipoVehiculo;
+
+        if (matcherCarro.matches()) {
+            capacidadMaximaPasajeros = 4; // Un carro puede llevar 4 pasajeros adicionales (total 5 con conductor)
+            tipoVehiculo = "carro";
+        } else if (matcherMoto.matches()) {
+            capacidadMaximaPasajeros = 2; // Una moto puede llevar 2 pasajeros adicionales
+            tipoVehiculo = "moto";
+        } else {
+            throw new RuntimeException("El formato de la placa '" + placaVehiculo + "' del vehículo no es reconocido (no es carro ni moto).");
+        }
+
+        // 6. Procesar Misiones para determinar la asignación según la capacidad
+        Set<Integer> misionesAsignadasIds = new HashSet<>(); // IDs de misiones que SÍ se asignarán a este viaje
+        List<Integer> misionesNoAsignadasIds = new ArrayList<>(); // IDs de misiones que NO se pudieron asignar
+        List<Mision> misionesValidasParaAsignar = new ArrayList<>(); // Objetos Mision validados que se procesarán
+
+        // Primero, eliminamos las asociaciones de misiones existentes para este viaje.
+        // Esto permite que el viaje actualice completamente sus misiones.
+        misionXViajeRepository.deleteByViaje(viajeExistente);
+
+        if (viajeDTO.getIdMisiones() != null && !viajeDTO.getIdMisiones().isEmpty()) {
+            for (Integer idMision : viajeDTO.getIdMisiones()) {
+                Optional<Mision> misionOptional = misionRepository.findById(idMision);
+                if (misionOptional.isPresent()) {
+                    Mision mision = misionOptional.get();
+
+                    // --- VALIDACIÓN 2: Verificar si la misión ya está programada en otro viaje (excluyendo el viaje actual) ---
+                    // Busca si ya existe una entrada en mision_x_viaje para esta misión.
+                    Optional<MisionXViaje> existingMisionXViaje = misionXViajeRepository.findByMision(mision);
+
+                    // Si la misión ya está programada en otro viaje Y NO ES el viaje que estamos actualizando,
+                    // la añadimos a las no asignadas.
+                    if (existingMisionXViaje.isPresent() && !existingMisionXViaje.get().getViaje().getIdViaje().equals(idViaje)) {
+                        misionesNoAsignadasIds.add(mision.getNumeroMision());
+                        System.out.println("ADVERTENCIA: La misión con ID " + mision.getNumeroMision() + " ya está programada en el viaje con ID " + existingMisionXViaje.get().getViaje().getIdViaje() + ". No se asignará a este viaje.");
+                        continue; // Pasamos a la siguiente misión
+                    }
+                    // --- FIN DE VALIDACIÓN 2 ---
+
+                    // Si todavía hay capacidad en el vehículo para más personas (misiones)
+                    if (misionesAsignadasIds.size() < capacidadMaximaPasajeros) {
+                        misionesAsignadasIds.add(mision.getNumeroMision()); // Añadir la misión a las asignadas
+                        misionesValidasParaAsignar.add(mision); // Guardar el objeto Mision para usarlo después
+                    } else {
+                        // No hay más capacidad, esta misión no se puede asignar en este viaje
+                        misionesNoAsignadasIds.add(mision.getNumeroMision());
+                    }
+                } else {
+                    // Si una misión no existe, es un error grave que impide la actualización del viaje.
+                    throw new RuntimeException("Misión con ID " + idMision + " no encontrada. No se puede proceder con la actualización del viaje.");
+                }
+            }
+        }
+
+        // 7. Preparar mensaje adicional si hay misiones no asignadas
+        String mensajeAdicional = null;
+        if (!misionesNoAsignadasIds.isEmpty()) {
+            // Contar las misiones no asignadas por capacidad vs. ya programadas
+            long misionesPorCapacidad = misionesNoAsignadasIds.stream()
+                    .filter(id -> !misionesAsignadasIds.contains(id)) // Misiones que no se asignaron por capacidad
+                    .count();
+            long misionesYaProgramadas = misionesNoAsignadasIds.size() - misionesPorCapacidad;
+
+            StringBuilder sb = new StringBuilder();
+            if (misionesPorCapacidad > 0) {
+                sb.append(String.format(
+                        "El vehículo tipo %s (placa %s) solo puede transportar a %d personas. %d misiones excedieron la capacidad. ",
+                        tipoVehiculo, placaVehiculo, capacidadMaximaPasajeros, misionesPorCapacidad
+                ));
+            }
+            if (misionesYaProgramadas > 0) {
+                sb.append(String.format(
+                        "%d misiones ya estaban programadas en otros viajes. ",
+                        misionesYaProgramadas
+                ));
+            }
+            sb.append(String.format("Las misiones con IDs [%s] no fueron asignadas a este viaje. Por favor, gestione estas misiones en otro viaje.",
+                    misionesNoAsignadasIds.stream().map(Object::toString).collect(Collectors.joining(", "))
+            ));
+            mensajeAdicional = sb.toString();
+            System.out.println(mensajeAdicional);
+        }
+
+        // 8. Calcular viático y establecer el estado activo
+        viajeExistente.setViatico(calcularViatico(viajeExistente.getDistanciaRecorrida()));
+        // Aquí podrías añadir lógica para actualizar el estado 'activo' si el DTO lo permite:
+        // viajeExistente.setActivo(viajeDTO.isActivo());
+
+        // 9. Guardar el Viaje actualizado en la base de datos
+        Viaje viajeActualizado = viajeRepository.save(viajeExistente);
+
+        // 10. Asignación REAL de Misiones al Viaje a través de MisionXViaje
+        if (!misionesValidasParaAsignar.isEmpty()) {
+            for (Mision mision : misionesValidasParaAsignar) {
+                // Solo creamos la relación si la misión fue efectivamente asignada por capacidad
+                if (misionesAsignadasIds.contains(mision.getNumeroMision())) {
+                    MisionXViaje misionXViaje = new MisionXViaje(viajeActualizado, mision); // Crea una nueva instancia
+                    misionXViajeRepository.save(misionXViaje); // Persiste la relación
+                }
+            }
+        }
+
+        // 11. Retornar el resultado encapsulado en el DTO
+        return new ViajeCreationResultDTO(viajeActualizado, misionesNoAsignadasIds, mensajeAdicional);
+    }
 }

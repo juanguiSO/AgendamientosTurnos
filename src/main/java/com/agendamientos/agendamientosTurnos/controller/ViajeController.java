@@ -190,4 +190,30 @@ public class ViajeController {
             return new ResponseEntity<>(errorResult, HttpStatus.BAD_REQUEST);
         }
     }
+
+    /**
+     * Endpoint para actualizar un viaje existente y sus misiones asociadas.
+     * Utiliza un PUT para actualizaciones completas o PATCH para parciales, aquí se usa PUT.
+     * @param idViaje El ID del viaje a actualizar, recibido como parte de la URL.
+     * @param viajeDTO Los datos del viaje y misiones a actualizar, recibidos en el cuerpo de la petición.
+     * @return ResponseEntity con el resultado de la operación o un mensaje de error.
+     */
+    @PutMapping("/{idViaje}/misiones") // Mapea las peticiones PUT a /api/viajes/{idViaje}
+    public ResponseEntity<ViajeCreationResultDTO> actualizarViaje(
+            @PathVariable Integer idViaje, // Captura el ID del viaje de la URL
+            @RequestBody ViajeCreationWithMisionesDTO viajeDTO) { // Captura los datos del cuerpo de la petición
+        try {
+            // Llama al método de servicio para actualizar el viaje
+            ViajeCreationResultDTO result = viajeService.actualizarViajeYAsignarMisiones(idViaje, viajeDTO);
+            return new ResponseEntity<>(result, HttpStatus.OK); // Retorna el resultado con estado 200 OK
+
+        } catch (RuntimeException e) {
+            // Manejo básico de errores: si ocurre una excepción, retorna un 400 Bad Request
+            // En una aplicación real, usarías un manejo de excepciones más sofisticado (Ej. @ControllerAdvice)
+            System.err.println("Error al actualizar viaje: " + e.getMessage()); // Imprime el error para depuración
+            // Puedes crear un DTO de error más específico si lo necesitas
+            return new ResponseEntity<>(new ViajeCreationResultDTO(null, null, "Error: " + e.getMessage()),
+                    HttpStatus.BAD_REQUEST);
+        }
+    }
 }

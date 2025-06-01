@@ -20,7 +20,9 @@ public class MisionXViaje {
     @ManyToOne(fetch = FetchType.LAZY) // Se recomienda Lazy loading
     @JoinColumn(name = "id_viaje", nullable = false)
     private Viaje viaje;
-
+    public MisionXViaje() {
+        // Este es el constructor que JPA/Hibernate necesita
+    }
     // ¡ESTE ES EL CONSTRUCTOR CORREGIDO!
     // Asigna los parámetros a los campos de la clase.
     public MisionXViaje(Viaje viaje, Mision mision) {
