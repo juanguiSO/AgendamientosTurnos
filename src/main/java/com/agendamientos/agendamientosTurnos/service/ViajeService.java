@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.service;
 
+import com.agendamientos.agendamientosTurnos.dto.MisionDTO;
 import com.agendamientos.agendamientosTurnos.dto.ViajeCreationDTO;
 import com.agendamientos.agendamientosTurnos.dto.ViajeCreationResultDTO;
 import com.agendamientos.agendamientosTurnos.dto.ViajeCreationWithMisionesDTO;
@@ -14,9 +15,13 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.slf4j.Logger; // Importar Logger
+import org.slf4j.LoggerFactory; // Importar LoggerFactory
 
 @Service
 public class ViajeService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ViajeService.class); // Instancia del logger
 
     // Constante para el umbral de distancia para el cálculo del viático
     private static final double DISTANCIA_UMBRAL_VIATICO = 60.0;
@@ -28,14 +33,19 @@ public class ViajeService {
     private final VehiculoRepository vehiculoRepository;
     private final MisionXViajeRepository misionXViajeRepository;
     private final MisionRepository misionRepository;
-    @Autowired // Constructor para inyección de dependencias
+    private final FuncionarioRepository funcionarioRepository;
+    private final EspecialidadRepository especialidadRepository;
+
+    @Autowired
     public ViajeService(
             ViajeRepository viajeRepository,
             CasoRepository casoRepository,
             EstadoViajeRepository estadoViajeRepository,
             VehiculoRepository vehiculoRepository,
             MisionXViajeRepository misionXViajeRepository,
-            MisionRepository misionRepository
+            MisionRepository misionRepository,
+            FuncionarioRepository funcionarioRepository,
+            EspecialidadRepository especialidadRepository
     ) {
         this.viajeRepository = viajeRepository;
         this.casoRepository = casoRepository;
@@ -43,8 +53,9 @@ public class ViajeService {
         this.vehiculoRepository = vehiculoRepository;
         this.misionXViajeRepository = misionXViajeRepository;
         this.misionRepository = misionRepository;
+        this.funcionarioRepository = funcionarioRepository;
+        this.especialidadRepository = especialidadRepository;
     }
-
     /**
      * Obtiene una lista de todos los viajes activos.
      * Utiliza el método findByActivo del repositorio para mayor eficiencia.
@@ -754,5 +765,83 @@ public class ViajeService {
 
         // 11. Retornar el resultado encapsulado en el DTO
         return new ViajeCreationResultDTO(viajeActualizado, misionesNoAsignadasIds, mensajeAdicional);
+    }
+
+    /**
+     * Obtiene una lista de DTOs de misiones asociadas a un viaje específico.
+     * Utiliza la tabla de unión MisionXViaje para encontrar las misiones y luego las mapea a MisionDTO.
+     *
+     * @param idViaje El ID del viaje.
+     * @return Una lista de objetos MisionDTO.
+     * @throws RuntimeException Si el viaje con el ID proporcionado no existe.
+     */
+    @Transactional(readOnly = true)
+    public List<MisionDTO> getMisionesByViajeId(Integer idViaje) {
+        logger.info("Intentando obtener misiones para el viaje con ID: {}", idViaje);
+        // 1. Validar que el viaje exista (opcional, pero buena práctica)
+        Optional<Viaje> viajeOptional = viajeRepository.findById(idViaje);
+        if (viajeOptional.isEmpty()) {
+            logger.warn("Viaje con ID {} no encontrado al intentar obtener misiones.", idViaje);
+            throw new RuntimeException("El viaje con ID " + idViaje + " no existe.");
+        }
+        logger.debug("Viaje con ID {} encontrado.", idViaje);
+
+        // 2. Obtener todas las relaciones MisionXViaje para este viaje
+        List<MisionXViaje> misionesXViaje = misionXViajeRepository.findByViaje_IdViaje(idViaje);
+
+        if (misionesXViaje.isEmpty()) {
+            logger.info("No se encontraron misiones asociadas al viaje con ID: {}", idViaje);
+            return Collections.emptyList(); // Devuelve una lista vacía si no hay misiones
+        }
+
+        // 3. Mapear las entidades Mision a MisionDTO
+        List<MisionDTO> misionDTOs = misionesXViaje.stream()
+                .map(MisionXViaje::getMision)
+                .filter(Objects::nonNull) // Asegurarse de que la misión no sea nula (aunque no debería pasar con el findBy)
+                .map(this::convertToMisionDTO)
+                .collect(Collectors.toList());
+
+        logger.info("Se encontraron {} misiones para el viaje con ID: {}", misionDTOs.size(), idViaje);
+        return misionDTOs;
+    }
+    /**
+     * Método auxiliar para convertir una entidad Mision a un MisionDTO.
+     * Recupera información adicional de las entidades relacionadas si están presentes.
+     *
+     * @param mision La entidad Mision a convertir.
+     * @return El MisionDTO correspondiente.
+     */
+    private MisionDTO convertToMisionDTO(Mision mision) {
+        MisionDTO dto = new MisionDTO();
+        dto.setNumeroMision(mision.getNumeroMision());
+        dto.setActividades(mision.getActividades());
+        dto.setActivo(mision.getActivo());
+
+        // Manejar Funcionario
+        if (mision.getFuncionario() != null) {
+            // Se asume que la entidad Mision ya tiene el objeto Funcionario cargado
+            // Si no es así (Lazy Loading), necesitarías cargarlo explícitamente desde funcionarioRepository
+            dto.setIdFuncionario(mision.getFuncionario().getIdFuncionario());
+            dto.setNombreFuncionario(mision.getFuncionario().getNombre());
+            dto.setApellidoFuncionario(mision.getFuncionario().getApellido());
+        }
+
+        // Manejar Caso
+        if (mision.getCaso() != null) {
+            // Se asume que la entidad Mision ya tiene el objeto Caso cargado
+            // Si no es así (Lazy Loading), necesitarías cargarlo explícitamente desde casoRepository
+            dto.setIdCaso(mision.getCaso().getIdCaso());
+            dto.setNumeroCaso(mision.getCaso().getCodigoCaso()); // Asumiendo que Caso tiene getCodigoCaso()
+        }
+
+        // Manejar Especialidad
+        if (mision.getEspecialidad() != null) {
+            // Se asume que la entidad Mision ya tiene el objeto Especialidad cargado
+            // Si no es así (Lazy Loading), necesitarías cargarlo explícitamente desde especialidadRepository
+            dto.setIdEspecialidad(mision.getEspecialidad().getIdEspecialidad());
+            dto.setEspecialidad(mision.getEspecialidad().getEspecialidad()); // Asumiendo que Especialidad tiene getNombreEspecialidad()
+        }
+
+        return dto;
     }
 }

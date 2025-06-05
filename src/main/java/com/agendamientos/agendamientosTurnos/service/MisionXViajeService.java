@@ -1,34 +1,38 @@
 package com.agendamientos.agendamientosTurnos.service;
 
-import com.agendamientos.agendamientosTurnos.entity.Mision;
 import com.agendamientos.agendamientosTurnos.entity.MisionXViaje;
 import com.agendamientos.agendamientosTurnos.repository.MisionXViajeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MisionXViajeService {
-    @Autowired
-    private MisionXViajeRepository repository;
+    private final MisionXViajeRepository repository;
 
-    public MisionXViaje guardarRelacion(MisionXViaje misionXViaje) {
+    public MisionXViajeService(MisionXViajeRepository repository) {
+        this.repository = repository;
+    }
+
+    public List<MisionXViaje> findAll() {
+        return repository.findAll();
+    }
+
+    public Optional<MisionXViaje> findById(Long id) {
+        return repository.findById(id);
+    }
+
+    public MisionXViaje save(MisionXViaje misionXViaje) {
         return repository.save(misionXViaje);
     }
 
-    public List<MisionXViaje> obtenerPorMision(Long numeroMision) {
-        return repository.findByMision_NumeroMision(numeroMision);
+    public void deleteById(Long id) {
+        repository.deleteById(id);
     }
 
-    public List<MisionXViaje> obtenerPorViaje(Long idViaje) {
+    public List<MisionXViaje> findByViajeId(Integer idViaje) {
         return repository.findByViaje_IdViaje(idViaje);
     }
 
-    public List<Mision> obtenerMisionesPorViaje(Long idViaje) {
-        List<MisionXViaje> relaciones = repository.findByViaje_IdViaje(idViaje);
-        return relaciones.stream()
-                .map(MisionXViaje::getMision)
-                .toList(); // o .collect(Collectors.toList()) si usas Java <17
-    }
 }

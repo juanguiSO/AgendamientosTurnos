@@ -1,6 +1,7 @@
 package com.agendamientos.agendamientosTurnos.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -9,6 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "mision")
 public class Mision {
 
@@ -84,4 +86,6 @@ public class Mision {
     public Especialidad getEspecialidad() {
         return especialidad;
     }
+
+
 }

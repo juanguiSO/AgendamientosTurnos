@@ -14,8 +14,9 @@ public interface MisionXViajeRepository extends JpaRepository<MisionXViaje, Long
 
     int deleteByViaje(Viaje viaje);
     List<MisionXViaje> findByMision_NumeroMision(Long numeroMision);
-    List<MisionXViaje> findByViaje_IdViaje(Long idViaje);
-    // List<MisionXViaje> findByMision_NumeroMision(String numeroMision);
+    List<MisionXViaje> findByViaje_IdViaje(Integer idViaje);
+
+
     Optional<MisionXViaje> findByMision(Mision mision);
 
 

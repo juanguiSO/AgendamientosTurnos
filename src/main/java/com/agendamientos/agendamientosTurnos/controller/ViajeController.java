@@ -1,23 +1,31 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
-import com.agendamientos.agendamientosTurnos.dto.ViajeCreationDTO; // Import the DTO for trip creation with cases
+import com.agendamientos.agendamientosTurnos.dto.MisionDTO; // Importar MisionDTO
+import com.agendamientos.agendamientosTurnos.dto.ViajeCreationDTO;
 import com.agendamientos.agendamientosTurnos.dto.ViajeCreationResultDTO;
 import com.agendamientos.agendamientosTurnos.dto.ViajeCreationWithMisionesDTO;
 import com.agendamientos.agendamientosTurnos.entity.Viaje;
 import com.agendamientos.agendamientosTurnos.service.ViajeService;
+import com.agendamientos.agendamientosTurnos.dto.ErrorResponse;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+
+import org.springframework.http.*;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController // Indicates that this class is a REST controller
 @RequestMapping("/api/viajes") // Defines the base path for all endpoints in this controller
 public class ViajeController {
+
+    private static final Logger logger = LoggerFactory.getLogger(ViajeController.class);
 
     @Autowired // Injects an instance of ViajeService
     private ViajeService viajeService;
@@ -198,7 +206,7 @@ public class ViajeController {
      * @param viajeDTO Los datos del viaje y misiones a actualizar, recibidos en el cuerpo de la petición.
      * @return ResponseEntity con el resultado de la operación o un mensaje de error.
      */
-    @PutMapping("/{idViaje}/misiones") // Mapea las peticiones PUT a /api/viajes/{idViaje}
+    @PutMapping("/{idViaje}/misiones") // Mapea las peticiones PUT a /api/viajes/{idViaje}/misiones
     public ResponseEntity<ViajeCreationResultDTO> actualizarViaje(
             @PathVariable Integer idViaje, // Captura el ID del viaje de la URL
             @RequestBody ViajeCreationWithMisionesDTO viajeDTO) { // Captura los datos del cuerpo de la petición
@@ -214,6 +222,61 @@ public class ViajeController {
             // Puedes crear un DTO de error más específico si lo necesitas
             return new ResponseEntity<>(new ViajeCreationResultDTO(null, null, "Error: " + e.getMessage()),
                     HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Endpoint para obtener todas las misiones asociadas a un viaje específico.
+     * GET /api/viajes/{idViaje}/misiones
+     *
+     * @param idViaje El ID del viaje del cual se quieren obtener las misiones.
+     * @return ResponseEntity con una lista de MisionDTOs o un estado NOT_FOUND/BAD_REQUEST.
+     */
+    @GetMapping("/{idViaje}/misiones")
+    public ResponseEntity<?> getMisionesByViajeId(@PathVariable Integer idViaje) {
+        // Log: Indica que se ha recibido una petición para este endpoint con el ID de viaje.
+        logger.info("Petición recibida para obtener misiones del viaje con ID: {}", idViaje);
+        try {
+            List<MisionDTO> misiones = viajeService.getMisionesByViajeId(idViaje);
+
+            if (misiones.isEmpty()) {
+                // Log: Informa que el viaje existe pero no tiene misiones asociadas.
+                logger.info("Viaje con ID {} existe, pero no tiene misiones asociadas. Retornando 204 No Content.", idViaje);
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204 No Content
+            }
+            // Log: Informa la cantidad de misiones encontradas para el viaje.
+            logger.info("Misiones obtenidas exitosamente para el viaje con ID {}. Cantidad: {}", idViaje, misiones.size());
+
+            // Opcional: Si quieres ver los detalles de las misiones en el log (puede ser muy verboso para muchas misiones)
+            // Esto solo se activará si el nivel de log es DEBUG
+            logger.debug("Detalle de misiones para el viaje {}: {}", idViaje, misiones);
+
+            return new ResponseEntity<>(misiones, HttpStatus.OK);
+
+        } catch (RuntimeException e) {
+            String errorMessage = "Error al obtener misiones para el viaje " + idViaje + ": " + e.getMessage();
+            // Log: Registra el error completo, incluyendo la pila de llamadas (stack trace).
+            logger.error(errorMessage, e);
+
+            if (e.getMessage().contains("no existe")) {
+                // Log: Detalle específico si el viaje no fue encontrado por el servicio.
+                logger.warn("El viaje con ID {} no fue encontrado. Retornando 404 Not Found.", idViaje);
+                ErrorResponse errorResponse = new ErrorResponse(
+                        HttpStatus.NOT_FOUND,
+                        "Viaje no encontrado: " + e.getMessage(), // Mensaje más específico
+                        "/api/viajes/" + idViaje + "/misiones"
+                );
+                return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND); // 404 Not Found
+            } else {
+                // Log: Detalle para otros tipos de errores.
+                logger.error("Error inesperado al procesar la solicitud para el viaje {}. Retornando 400 Bad Request.", idViaje);
+                ErrorResponse errorResponse = new ErrorResponse(
+                        HttpStatus.BAD_REQUEST,
+                        "Solicitud inválida: " + e.getMessage(),
+                        "/api/viajes/" + idViaje + "/misiones"
+                );
+                return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST); // 400 Bad Request
+            }
         }
     }
 }

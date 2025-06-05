@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
@@ -16,6 +17,7 @@ import java.util.List;
 @Getter
 @Data
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "viaje")
 public class Viaje {
 
