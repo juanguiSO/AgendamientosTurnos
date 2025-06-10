@@ -3,15 +3,13 @@ package com.agendamientos.agendamientosTurnos.controller;
 import com.agendamientos.agendamientosTurnos.entity.*;
 import com.agendamientos.agendamientosTurnos.service.CasoService;
 import com.agendamientos.agendamientosTurnos.service.ReporteService;
+import com.itextpdf.layout.properties.TextAlignment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import com.agendamientos.agendamientosTurnos.service.MisionService;
 import com.agendamientos.agendamientosTurnos.dto.FuncionarioDTO;
 import com.agendamientos.agendamientosTurnos.service.FuncionarioService;
@@ -34,6 +32,8 @@ import com.itextpdf.layout.element.Image;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -477,5 +477,831 @@ public class ReportesController {
             String errorMessage = "Error al generar el reporte de viajes: " + e.getMessage();
             return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    /**
+     * Genera un reporte PDF de misiones finalizadas para un funcionario en un rango de fechas.
+     * @param funcionarioCedula La cédula del funcionario.
+     * @param fechaInicioStr La fecha de inicio del rango (formato yyyy-MM-dd HH:mm:ss).
+     * @param fechaFinStr La fecha de fin del rango (formato yyyy-MM-dd HH:mm:ss).
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/misiones-finalizadas-por-funcionario-y-rango/{funcionarioCedula}/pdf")
+    public ResponseEntity<byte[]> generarReporteMisionesFinalizadasPorFuncionarioYRango(
+            @PathVariable String funcionarioCedula,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) {
+        try {
+            LocalDateTime fechaInicio = null;
+            LocalDateTime fechaFin = null;
+
+            if (fechaInicioStr != null && !fechaInicioStr.isEmpty()) {
+                fechaInicio = LocalDateTime.parse(fechaInicioStr); // Asume formato ISO_LOCAL_DATE_TIME
+            }
+            if (fechaFinStr != null && !fechaFinStr.isEmpty()) {
+                fechaFin = LocalDateTime.parse(fechaFinStr); // Asume formato ISO_LOCAL_DATE_TIME
+            }
+
+            // Llamar al servicio para obtener los datos de las misiones finalizadas
+            // Asegúrate de que el ReporteService tenga este método
+            List<Object[]> misionesFinalizadas = reporteService.obtenerMisionesFinalizadasPorFuncionarioYRango(
+                    funcionarioCedula, fechaInicio, fechaFin);
+
+            // Generar el PDF con los datos obtenidos
+            byte[] pdfBytes = generarPdfMisionesFinalizadas(misionesFinalizadas, funcionarioCedula, fechaInicio, fechaFin);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("inline", "reporte_misiones_finalizadas_" + funcionarioCedula + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (DateTimeParseException e) {
+            String errorMessage = "Error en el formato de fecha. Use yyyy-MM-ddTHH:mm:ss o yyyy-MM-dd HH:mm:ss. Error: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Error en los parámetros: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de misiones finalizadas: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Helper method to generate the PDF for finalized missions.
+     * @param misionesData List of Object arrays with mission data (from the custom SQL query).
+     * @param cedulaFuncionario The ID number of the employee.
+     * @param fechaInicio The start date for the report.
+     * @param fechaFin The end date for the report.
+     * @return byte array of the generated PDF.
+     */
+    private byte[] generarPdfMisionesFinalizadas(List<Object[]> misionesData, String cedulaFuncionario, LocalDateTime fechaInicio, LocalDateTime fechaFin) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
+        Document document = new Document(pdf, PageSize.A4.rotate());
+
+        PdfFont customFont;
+        try {
+            customFont = PdfFontFactory.createFont("src/main/resources/fonts/verdana.ttf", EmbeddingStrategy.PREFER_EMBEDDED);
+        } catch (IOException e) {
+            System.err.println("Error al cargar la fuente Verdana: " + e.getMessage());
+            try {
+                customFont = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            } catch (IOException ex) {
+                System.err.println("FATAL ERROR: No se pudo cargar ni la fuente personalizada ni la fuente de respaldo Helvetica: " + ex.getMessage());
+                throw new RuntimeException("No se pudo cargar ninguna fuente para el PDF.", ex);
+            }
+        }
+
+        DeviceRgb customHeaderColor = new DeviceRgb(30, 41, 59);
+
+        // Add Image
+        String imagePath = "src/main/resources/imagenes/logo.jpg";
+        try {
+            ImageData imageData = ImageDataFactory.create(imagePath);
+            Image image = new Image(imageData);
+            image.scaleToFit(80, 80);
+            document.add(image);
+            document.add(new Paragraph("\n"));
+        } catch (MalformedURLException e) {
+            System.err.println("Error: La URL de la imagen para el reporte de misiones finalizadas es incorrecta o el archivo no existe. " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error al cargar la imagen para el reporte de misiones finalizadas: " + e.getMessage());
+        }
+
+        document.add(new Paragraph("Reporte de Misiones Finalizadas por Funcionario y Rango de Fechas").setFont(customFont).setFontSize(18).setBold());
+        document.add(new Paragraph("Funcionario Cédula: " + cedulaFuncionario).setFont(customFont).setFontSize(12));
+        String rangoFechas = (fechaInicio != null ? fechaInicio.toString() : "N/A") + " - " + (fechaFin != null ? fechaFin.toString() : "N/A");
+        document.add(new Paragraph("Rango de Fechas: " + rangoFechas).setFont(customFont).setFontSize(12));
+        document.add(new Paragraph("\n"));
+
+        if (misionesData.isEmpty()) {
+            document.add(new Paragraph("No se encontraron misiones finalizadas para el funcionario y rango de fechas especificados.").setFont(customFont));
+        } else {
+            // Define table columns based on your SQL query's selected columns
+            // f.nombre, f.apellido, f.cedula, m.numero_mision, v.id_viaje, v.tiempo_inicio, v.tiempo_fin, ev.estado_viaje
+            Table table = new Table(new float[]{1.5f, 1.5f, 2, 1.5f, 2.5f, 2.5f, 1.5f}); // Adjust column widths as needed
+
+            table.addCell(new Cell().add(new Paragraph("Nombre Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Apellido Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Cédula Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Num. Misión").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+           // table.addCell(new Cell().add(new Paragraph("ID Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Inicio Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Fin Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Estado Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+
+            boolean alternateColor = false;
+            for (Object[] row : misionesData) {
+                // Cast to String for display, assuming all are strings from the query output
+                table.addCell(new Cell().add(new Paragraph(row[0] != null ? row[0].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[1] != null ? row[1].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[2] != null ? row[2].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[3] != null ? row[3].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[4] != null ? row[4].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[5] != null ? row[5].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[6] != null ? row[6].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+               // table.addCell(new Cell().add(new Paragraph(row[7] != null ? row[7].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                alternateColor = !alternateColor;
+            }
+            document.add(table);
+        }
+
+        document.add(new Paragraph("\n")); // Espacio
+        document.add(new Paragraph("Total de Misiones Finalizadas: " + misionesData.size())
+                .setFont(customFont).setFontSize(14).setBold().setTextAlignment(com.itextpdf.layout.properties.TextAlignment.RIGHT));
+
+
+        document.close();
+        return outputStream.toByteArray();
+    }
+
+    /**
+     * Genera un reporte PDF de viajes Reprogramados o Cancelados para un funcionario en un rango de fechas.
+     * @param funcionarioCedula La cédula del funcionario.
+     * @param fechaInicioStr La fecha de inicio del rango (formato Букмекерлар-MM-ddTHH:mm:ss o Букмекерлар-MM-dd HH:mm:ss).
+     * @param fechaFinStr La fecha de fin del rango (formato Букмекерлар-MM-ddTHH:mm:ss o Букмекерлар-MM-dd HH:mm:ss).
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/viajes-reprogramados-cancelados-por-funcionario-y-rango/{funcionarioCedula}/pdf")
+    public ResponseEntity<byte[]> generarReporteViajesReprogramadosOCanceladosPorFuncionarioYRango(
+            @PathVariable String funcionarioCedula,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) {
+        try {
+            LocalDateTime fechaInicio = null;
+            LocalDateTime fechaFin = null;
+
+            if (fechaInicioStr != null && !fechaInicioStr.isEmpty()) {
+                fechaInicio = LocalDateTime.parse(fechaInicioStr);
+            }
+            if (fechaFinStr != null && !fechaFinStr.isEmpty()) {
+                fechaFin = LocalDateTime.parse(fechaFinStr);
+            }
+
+            List<Object[]> viajesReporte = reporteService.obtenerViajesReprogramadosOCanceladosPorFuncionarioYRango(
+                    funcionarioCedula, fechaInicio, fechaFin);
+
+            byte[] pdfBytes = generarPdfViajesReprogramadosOCancelados(viajesReporte, funcionarioCedula, fechaInicio, fechaFin);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("inline", "reporte_viajes_reprogramados_cancelados_" + funcionarioCedula + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (DateTimeParseException e) {
+            String errorMessage = "Error en el formato de fecha. Use Букмекерлар-MM-ddTHH:mm:ss o Букмекерлар-MM-dd HH:mm:ss. Error: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Error en los parámetros: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de viajes reprogramados/cancelados: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Helper method to generate the PDF for reprogrammed or canceled trips.
+     * Adds the 'Observación' column.
+     * @param viajesData List of Object arrays with trip data (from the custom SQL query).
+     * @param cedulaFuncionario The ID number of the employee.
+     * @param fechaInicio The start date for the report.
+     * @param fechaFin The end date for the report.
+     * @return byte array of the generated PDF.
+     */
+    private byte[] generarPdfViajesReprogramadosOCancelados(List<Object[]> viajesData, String cedulaFuncionario, LocalDateTime fechaInicio, LocalDateTime fechaFin) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
+        Document document = new Document(pdf, PageSize.A4.rotate());
+
+        PdfFont customFont;
+        try {
+            customFont = PdfFontFactory.createFont("src/main/resources/fonts/verdana.ttf", EmbeddingStrategy.PREFER_EMBEDDED);
+        } catch (IOException e) {
+            System.err.println("Error al cargar la fuente Verdana: " + e.getMessage());
+            try {
+                customFont = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            } catch (IOException ex) {
+                System.err.println("FATAL ERROR: No se pudo cargar ni la fuente personalizada ni la fuente de respaldo Helvetica: " + ex.getMessage());
+                throw new RuntimeException("No se pudo cargar ninguna fuente para el PDF.", ex);
+            }
+        }
+
+        DeviceRgb customHeaderColor = new DeviceRgb(30, 41, 59);
+
+        // Add Image
+        String imagePath = "src/main/resources/imagenes/logo.jpg";
+        try {
+            ImageData imageData = ImageDataFactory.create(imagePath);
+            Image image = new Image(imageData);
+            image.scaleToFit(80, 80);
+            document.add(image);
+            document.add(new Paragraph("\n"));
+        } catch (MalformedURLException e) {
+            System.err.println("Error: La URL de la imagen para el reporte de viajes reprogramados/cancelados es incorrecta o el archivo no existe. " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error al cargar la imagen para el reporte de viajes reprogramados/cancelados: " + e.getMessage());
+        }
+
+        document.add(new Paragraph("Reporte de Viajes Reprogramados o Cancelados por Funcionario y Rango de Fechas").setFont(customFont).setFontSize(18).setBold());
+        document.add(new Paragraph("Funcionario Cédula: " + cedulaFuncionario).setFont(customFont).setFontSize(12));
+        String rangoFechas = (fechaInicio != null ? fechaInicio.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "N/A") + " - " + (fechaFin != null ? fechaFin.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "N/A");
+        document.add(new Paragraph("Rango de Fechas: " + rangoFechas).setFont(customFont).setFontSize(12));
+        document.add(new Paragraph("\n"));
+
+        if (viajesData.isEmpty()) {
+            document.add(new Paragraph("No se encontraron viajes reprogramados o cancelados para el funcionario y rango de fechas especificados.").setFont(customFont));
+        } else {
+            // Se añaden 9 columnas: 8 originales + 1 para Observación
+            // f.nombre, f.apellido, f.cedula, m.numero_mision, v.id_viaje, v.tiempo_inicio, v.tiempo_fin, ev.estado_viaje, v.observacion
+            Table table = new Table(new float[]{1.2f, 1.2f, 1.8f, 1.2f,2.2f, 2.2f, 1.2f, 3f}); // Ajusta anchos de columna si es necesario
+
+            table.addCell(new Cell().add(new Paragraph("Nom. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Apel. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Cédula Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Num. Misión").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            //table.addCell(new Cell().add(new Paragraph("ID Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Inicio Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Fin Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Estado Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Observación").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE)); // ¡Nueva cabecera!
+
+            boolean alternateColor = false;
+            for (Object[] row : viajesData) {
+                // Asegúrate de que los índices coincidan con el orden de tu SELECT en el servicio
+                // f.nombre (0), f.apellido (1), f.cedula (2), m.numero_mision (3), v.id_viaje (4),
+                // v.tiempo_inicio (5), v.tiempo_fin (6), ev.estado_viaje (7), v.observacion (8)
+                table.addCell(new Cell().add(new Paragraph(row[0] != null ? row[0].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[1] != null ? row[1].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[2] != null ? row[2].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[3] != null ? row[3].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[4] != null ? row[4].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[5] != null ? row[5].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[6] != null ? row[6].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[7] != null ? row[7].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+               // table.addCell(new Cell().add(new Paragraph(row[8] != null ? row[8].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE)); // ¡Nueva celda!
+                alternateColor = !alternateColor;
+            }
+            document.add(table);
+        }
+        document.add(new Paragraph("\n")); // Espacio
+        document.add(new Paragraph("Total de Viajes Reprogramados/Cancelados: " + viajesData.size())
+                .setFont(customFont).setFontSize(14).setBold().setTextAlignment(com.itextpdf.layout.properties.TextAlignment.RIGHT));
+
+        document.close();
+        return outputStream.toByteArray();
+    }
+
+
+    /**
+     * Genera un reporte PDF de viajes realizados por un funcionario en un rango de fechas,
+     * diferenciando entre viajes con y sin viáticos, y totalizando cada categoría.
+     * @param funcionarioCedula La cédula del funcionario.
+     * @param fechaInicioStr La fecha de inicio del rango (formato YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss).
+     * @param fechaFinStr La fecha de fin del rango (formato YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss).
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/viajes-con-sin-viaticos-por-funcionario-y-rango/{funcionarioCedula}/pdf")
+    public ResponseEntity<byte[]> generarReporteViajesConSinViaticosPorFuncionarioYRango(
+            @PathVariable String funcionarioCedula,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) {
+        try {
+            LocalDateTime fechaInicio = null;
+            LocalDateTime fechaFin = null;
+
+            if (fechaInicioStr != null && !fechaInicioStr.isEmpty()) {
+                fechaInicio = LocalDateTime.parse(fechaInicioStr);
+            }
+            if (fechaFinStr != null && !fechaFinStr.isEmpty()) {
+                fechaFin = LocalDateTime.parse(fechaFinStr);
+            }
+
+            // El servicio devolverá un Map con dos listas: "conViaticos" y "sinViaticos"
+            Map<String, List<Object[]>> viajesPorCategoria = reporteService.obtenerViajesConSinViaticosPorFuncionarioYRango(
+                    funcionarioCedula, fechaInicio, fechaFin);
+
+            byte[] pdfBytes = generarPdfViajesConSinViaticos(
+                    viajesPorCategoria.getOrDefault("conViaticos", List.of()),
+                    viajesPorCategoria.getOrDefault("sinViaticos", List.of()),
+                    funcionarioCedula, fechaInicio, fechaFin);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("inline", "reporte_viajes_viaticos_" + funcionarioCedula + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (DateTimeParseException e) {
+            String errorMessage = "Error en el formato de fecha. Use YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss. Error: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Error en los parámetros: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de viajes con/sin viáticos: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Helper method to generate the PDF for trips with and without per diem (viaticos).
+     * Displays separate tables and totals for each category.
+     * @param viajesConViaticos List of Object arrays for trips with per diem.
+     * @param viajesSinViaticos List of Object arrays for trips without per diem.
+     * @param cedulaFuncionario The ID number of the employee.
+     * @param fechaInicio The start date for the report.
+     * @param fechaFin The end date for the report.
+     * @return byte array of the generated PDF.
+     */
+    private byte[] generarPdfViajesConSinViaticos(List<Object[]> viajesConViaticos, List<Object[]> viajesSinViaticos,
+                                                  String cedulaFuncionario, LocalDateTime fechaInicio, LocalDateTime fechaFin) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
+        Document document = new Document(pdf, PageSize.A4.rotate());
+
+        PdfFont customFont;
+        try {
+            customFont = PdfFontFactory.createFont("src/main/resources/fonts/verdana.ttf", EmbeddingStrategy.PREFER_EMBEDDED);
+        } catch (IOException e) {
+            System.err.println("Error al cargar la fuente Verdana: " + e.getMessage());
+            try {
+                customFont = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            } catch (IOException ex) {
+                System.err.println("FATAL ERROR: No se pudo cargar ni la fuente personalizada ni la fuente de respaldo Helvetica: " + ex.getMessage());
+                throw new RuntimeException("No se pudo cargar ninguna fuente para el PDF.", ex);
+            }
+        }
+
+        DeviceRgb customHeaderColor = new DeviceRgb(30, 41, 59);
+
+        // Add Image
+        String imagePath = "src/main/resources/imagenes/logo.jpg";
+        try {
+            ImageData imageData = ImageDataFactory.create(imagePath);
+            Image image = new Image(imageData);
+            image.scaleToFit(80, 80);
+            document.add(image);
+            document.add(new Paragraph("\n"));
+        } catch (MalformedURLException e) {
+            System.err.println("Error: La URL de la imagen para el reporte de viajes con/sin viáticos es incorrecta o el archivo no existe. " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error al cargar la imagen para el reporte de viajes con/sin viáticos: " + e.getMessage());
+        }
+
+        document.add(new Paragraph("Reporte de Viajes con y sin Viáticos por Funcionario y Rango de Fechas").setFont(customFont).setFontSize(18).setBold());
+        document.add(new Paragraph("Funcionario Cédula: " + cedulaFuncionario).setFont(customFont).setFontSize(12));
+        String rangoFechas = (fechaInicio != null ? fechaInicio.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "N/A") + " - " + (fechaFin != null ? fechaFin.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "N/A");
+        document.add(new Paragraph("Rango de Fechas: " + rangoFechas).setFont(customFont).setFontSize(12));
+        document.add(new Paragraph("\n"));
+
+        // ----- Sección de Viajes CON Viáticos -----
+        document.add(new Paragraph("VIAJES CON VIÁTICOS").setFont(customFont).setFontSize(16).setBold().setUnderline());
+        document.add(new Paragraph("\n"));
+
+        if (viajesConViaticos.isEmpty()) {
+            document.add(new Paragraph("No se encontraron viajes con viáticos para el funcionario y rango de fechas especificados.").setFont(customFont));
+        } else {
+            // Columnas: f.nombre, f.apellido, f.cedula, m.numero_mision, v.tiempo_inicio, v.tiempo_fin, ev.estado_viaje
+            Table tableConViaticos = new Table(new float[]{1.5f, 1.5f, 2, 1.5f, 2.5f, 2.5f, 1.5f});
+
+            tableConViaticos.addCell(new Cell().add(new Paragraph("Nom. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableConViaticos.addCell(new Cell().add(new Paragraph("Apel. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableConViaticos.addCell(new Cell().add(new Paragraph("Cédula Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableConViaticos.addCell(new Cell().add(new Paragraph("Num. Misión").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableConViaticos.addCell(new Cell().add(new Paragraph("Inicio Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableConViaticos.addCell(new Cell().add(new Paragraph("Fin Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableConViaticos.addCell(new Cell().add(new Paragraph("Estado Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+
+            boolean alternateColor = false;
+            for (Object[] row : viajesConViaticos) {
+                // Índices: f.nombre (0), f.apellido (1), f.cedula (2), m.numero_mision (3),
+                // v.tiempo_inicio (4), v.tiempo_fin (5), ev.estado_viaje (6)
+                tableConViaticos.addCell(new Cell().add(new Paragraph(row[0] != null ? row[0].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableConViaticos.addCell(new Cell().add(new Paragraph(row[1] != null ? row[1].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableConViaticos.addCell(new Cell().add(new Paragraph(row[2] != null ? row[2].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableConViaticos.addCell(new Cell().add(new Paragraph(row[3] != null ? row[3].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableConViaticos.addCell(new Cell().add(new Paragraph(row[4] != null ? row[4].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableConViaticos.addCell(new Cell().add(new Paragraph(row[5] != null ? row[5].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableConViaticos.addCell(new Cell().add(new Paragraph(row[6] != null ? row[6].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                alternateColor = !alternateColor;
+            }
+            document.add(tableConViaticos);
+
+            // Añadir el total de viajes CON viáticos
+            document.add(new Paragraph("\n"));
+            document.add(new Paragraph("Total de Viajes con Viáticos: " + viajesConViaticos.size())
+                    .setFont(customFont).setFontSize(14).setBold().setTextAlignment(TextAlignment.RIGHT));
+        }
+
+        // ----- Sección de Viajes SIN Viáticos -----
+        document.add(new Paragraph("\n\n")); // Espacio entre secciones
+        document.add(new Paragraph("VIAJES SIN VIÁTICOS").setFont(customFont).setFontSize(16).setBold().setUnderline());
+        document.add(new Paragraph("\n"));
+
+        if (viajesSinViaticos.isEmpty()) {
+            document.add(new Paragraph("No se encontraron viajes sin viáticos para el funcionario y rango de fechas especificados.").setFont(customFont));
+        } else {
+            // Columnas: f.nombre, f.apellido, f.cedula, m.numero_mision, v.tiempo_inicio, v.tiempo_fin, ev.estado_viaje
+            Table tableSinViaticos = new Table(new float[]{1.5f, 1.5f, 2, 1.5f, 2.5f, 2.5f, 1.5f});
+
+            tableSinViaticos.addCell(new Cell().add(new Paragraph("Nom. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableSinViaticos.addCell(new Cell().add(new Paragraph("Apel. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableSinViaticos.addCell(new Cell().add(new Paragraph("Cédula Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableSinViaticos.addCell(new Cell().add(new Paragraph("Num. Misión").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableSinViaticos.addCell(new Cell().add(new Paragraph("Inicio Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableSinViaticos.addCell(new Cell().add(new Paragraph("Fin Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            tableSinViaticos.addCell(new Cell().add(new Paragraph("Estado Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+
+            boolean alternateColor = false;
+            for (Object[] row : viajesSinViaticos) {
+                // Índices: f.nombre (0), f.apellido (1), f.cedula (2), m.numero_mision (3),
+                // v.tiempo_inicio (4), v.tiempo_fin (5), ev.estado_viaje (6)
+                tableSinViaticos.addCell(new Cell().add(new Paragraph(row[0] != null ? row[0].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableSinViaticos.addCell(new Cell().add(new Paragraph(row[1] != null ? row[1].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableSinViaticos.addCell(new Cell().add(new Paragraph(row[2] != null ? row[2].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableSinViaticos.addCell(new Cell().add(new Paragraph(row[3] != null ? row[3].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableSinViaticos.addCell(new Cell().add(new Paragraph(row[4] != null ? row[4].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableSinViaticos.addCell(new Cell().add(new Paragraph(row[5] != null ? row[5].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                tableSinViaticos.addCell(new Cell().add(new Paragraph(row[6] != null ? row[6].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                alternateColor = !alternateColor;
+            }
+            document.add(tableSinViaticos);
+
+            // Añadir el total de viajes SIN viáticos
+            document.add(new Paragraph("\n"));
+            document.add(new Paragraph("Total de Viajes sin Viáticos: " + viajesSinViaticos.size())
+                    .setFont(customFont).setFontSize(14).setBold().setTextAlignment(TextAlignment.RIGHT));
+        }
+
+        document.close();
+        return outputStream.toByteArray();
+    }
+    /**
+     * Genera un reporte PDF con todas las misiones actualmente activas.
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/misiones-activas/pdf")
+    public ResponseEntity<byte[]> generarReporteMisionesActivas() {
+        try {
+            List<Object[]> misionesActivas = reporteService.obtenerMisionesActivas();
+            byte[] pdfBytes = generarPdfMisionesActivas(misionesActivas);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("inline", "reporte_misiones_activas.pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de misiones activas: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Helper method to generate the PDF for active missions.
+     * Uses 'activo' field from 'mision' table.
+     * @param misionesData List of Object arrays with active mission data.
+     * @return byte array of the generated PDF.
+     */
+    private byte[] generarPdfMisionesActivas(List<Object[]> misionesData) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
+        Document document = new Document(pdf, PageSize.A4); // A4 normal, no rotado
+
+        PdfFont customFont;
+        try {
+            customFont = PdfFontFactory.createFont("src/main/resources/fonts/verdana.ttf", EmbeddingStrategy.PREFER_EMBEDDED);
+        } catch (IOException e) {
+            System.err.println("Error al cargar la fuente Verdana: " + e.getMessage());
+            try {
+                customFont = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            } catch (IOException ex) {
+                System.err.println("FATAL ERROR: No se pudo cargar ni la fuente personalizada ni la fuente de respaldo Helvetica: " + ex.getMessage());
+                throw new RuntimeException("No se pudo cargar ninguna fuente para el PDF.", ex);
+            }
+        }
+
+        DeviceRgb customHeaderColor = new DeviceRgb(30, 41, 59);
+
+        // Add Image
+        String imagePath = "src/main/resources/imagenes/logo.jpg";
+        try {
+            ImageData imageData = ImageDataFactory.create(imagePath);
+            Image image = new Image(imageData);
+            image.scaleToFit(80, 80);
+            document.add(image);
+            document.add(new Paragraph("\n"));
+        } catch (MalformedURLException e) {
+            System.err.println("Error: La URL de la imagen para el reporte de misiones activas es incorrecta o el archivo no existe. " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error al cargar la imagen para el reporte de misiones activas: " + e.getMessage());
+        }
+
+        document.add(new Paragraph("Reporte de Misiones Activas").setFont(customFont).setFontSize(18).setBold());
+        document.add(new Paragraph("Fecha de Generación: " + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).setFont(customFont).setFontSize(10));
+        document.add(new Paragraph("\n"));
+
+        if (misionesData.isEmpty()) {
+            document.add(new Paragraph("No se encontraron misiones activas en el sistema.").setFont(customFont));
+        } else {
+            // Columnas ahora son 4: m.numero_mision, f.nombre, f.apellido, f.cedula
+            // El array de floats debe tener 4 elementos, uno por cada columna
+            Table table = new Table(new float[]{1.5f, 2.5f, 2.5f, 2.5f});
+
+            table.addCell(new Cell().add(new Paragraph("Num. Misión").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Nom. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Apel. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Cédula Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            // ELIMINADO: Celda para "Descripción Misión" porque ya no se selecciona
+
+            boolean alternateColor = false;
+            for (Object[] row : misionesData) {
+                // Índices: m.numero_mision (0), f.nombre (1), f.apellido (2), f.cedula (3)
+                // Se eliminó la referencia a row[4] que causaba el error
+                table.addCell(new Cell().add(new Paragraph(row[0] != null ? row[0].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[1] != null ? row[1].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[2] != null ? row[2].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[3] != null ? row[3].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                alternateColor = !alternateColor;
+            }
+            document.add(table);
+
+            // Añadir el total al final
+            document.add(new Paragraph("\n")); // Espacio
+            document.add(new Paragraph("Total de Misiones Activas: " + misionesData.size())
+                    .setFont(customFont).setFontSize(14).setBold().setTextAlignment(TextAlignment.RIGHT));
+        }
+
+        document.close();
+        return outputStream.toByteArray();
+    }
+    /**
+     * Genera un reporte PDF de viajes finalizados por un vehículo específico en un rango de fechas.
+     * @param idVehiculo El ID del vehículo.
+     * @param fechaInicioStr La fecha de inicio del rango (formato ISO 8601).
+     * @param fechaFinStr La fecha de fin del rango (formato ISO 8601).
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/viajes-finalizados-por-vehiculo/{idVehiculo}/pdf")
+    public ResponseEntity<byte[]> generarReporteViajesFinalizadosPorVehiculo(
+            @PathVariable Integer idVehiculo,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) {
+        try {
+            LocalDateTime fechaInicio = null;
+            LocalDateTime fechaFin = null;
+
+            if (fechaInicioStr != null && !fechaInicioStr.isEmpty()) {
+                fechaInicio = LocalDateTime.parse(fechaInicioStr);
+            }
+            if (fechaFinStr != null && !fechaFinStr.isEmpty()) {
+                fechaFin = LocalDateTime.parse(fechaFinStr);
+            }
+
+            List<Object[]> viajesFinalizados = reporteService.obtenerViajesFinalizadosPorVehiculoYRango(
+                    idVehiculo, fechaInicio, fechaFin);
+
+            byte[] pdfBytes = generarPdfViajesFinalizadosPorVehiculo(
+                    viajesFinalizados, idVehiculo, fechaInicio, fechaFin);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("inline", "reporte_viajes_vehiculo_" + idVehiculo + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (DateTimeParseException e) {
+            String errorMessage = "Error en el formato de fecha. Use yyyy-MM-DDTHH:mm:ss o yyyy-MM-DD HH:mm:ss. Error: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Error en los parámetros: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de viajes finalizados por vehículo: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Helper method to generate the PDF for finalized trips by a specific vehicle.
+     * @param viajesData List of Object arrays with finalized trip data.
+     * @param idVehiculo The ID of the vehicle.
+     * @param fechaInicio The start date for the report.
+     * @param fechaFin The end date for the report.
+     * @return byte array of the generated PDF.
+     */
+    private byte[] generarPdfViajesFinalizadosPorVehiculo(List<Object[]> viajesData, Integer idVehiculo, LocalDateTime fechaInicio, LocalDateTime fechaFin) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
+        Document document = new Document(pdf, PageSize.A4.rotate()); // Rotamos para más columnas
+
+        PdfFont customFont;
+        try {
+            customFont = PdfFontFactory.createFont("src/main/resources/fonts/verdana.ttf", EmbeddingStrategy.PREFER_EMBEDDED);
+        } catch (IOException e) {
+            System.err.println("Error al cargar la fuente Verdana: " + e.getMessage());
+            try {
+                customFont = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            } catch (IOException ex) {
+                System.err.println("FATAL ERROR: No se pudo cargar ni la fuente personalizada ni la fuente de respaldo Helvetica: " + ex.getMessage());
+                throw new RuntimeException("No se pudo cargar ninguna fuente para el PDF.", ex);
+            }
+        }
+
+        DeviceRgb customHeaderColor = new DeviceRgb(30, 41, 59);
+
+        // Add Image
+        String imagePath = "src/main/resources/imagenes/logo.jpg";
+        try {
+            ImageData imageData = ImageDataFactory.create(imagePath);
+            Image image = new Image(imageData);
+            image.scaleToFit(80, 80);
+            document.add(image);
+            document.add(new Paragraph("\n"));
+        } catch (MalformedURLException e) {
+            System.err.println("Error: La URL de la imagen para el reporte de viajes finalizados por vehículo es incorrecta o el archivo no existe. " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error al cargar la imagen para el reporte de viajes finalizados por vehículo: " + e.getMessage());
+        }
+
+        document.add(new Paragraph("Reporte de Viajes Finalizados por Vehículo").setFont(customFont).setFontSize(18).setBold());
+        document.add(new Paragraph("ID Vehículo: " + idVehiculo).setFont(customFont).setFontSize(12));
+        String rangoFechas = (fechaInicio != null ? fechaInicio.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "N/A") + " - " + (fechaFin != null ? fechaFin.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "N/A");
+        document.add(new Paragraph("Rango de Fechas: " + rangoFechas).setFont(customFont).setFontSize(12));
+        document.add(new Paragraph("\n"));
+
+        if (viajesData.isEmpty()) {
+            document.add(new Paragraph("No se encontraron viajes finalizados para el vehículo y rango de fechas especificados.").setFont(customFont));
+        } else {
+            // Columnas: id_viaje (0), marca (1), modelo (2), placa (3), tiempo_inicio (4), tiempo_fin (5),
+            // estado_actual_viaje (6), distancia_recorrida (7), observacion (8), viatico (9), nombre_funcionario (10), apellido_funcionario (11)
+            Table table = new Table(new float[]{0.8f, 1.2f, 1.2f, 1.2f, 2.2f, 2.2f, 1.2f, 1.2f, 2.5f, 0.8f, 1.5f, 1.5f});
+
+            table.addCell(new Cell().add(new Paragraph("ID Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Marca").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Modelo").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Placa").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Inicio Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Fin Viaje").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Estado").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Dist. (Km)").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Observación").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Viático").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Nom. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Apel. Func.").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+
+            boolean alternateColor = false;
+            for (Object[] row : viajesData) {
+                // Índices: id_viaje (0), marca (1), modelo (2), placa (3), tiempo_inicio (4), tiempo_fin (5),
+                // estado_actual_viaje (6), distancia_recorrida (7), observacion (8), viatico (9),
+                // nombre_funcionario (10), apellido_funcionario (11)
+                table.addCell(new Cell().add(new Paragraph(row[0] != null ? row[0].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[1] != null ? row[1].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[2] != null ? row[2].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[3] != null ? row[3].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[4] != null ? row[4].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[5] != null ? row[5].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[6] != null ? row[6].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[7] != null ? row[7].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[8] != null ? row[8].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+
+                // Conversión de TINYINT(1) a String "Sí"/"No" para viáticos
+                String viaticoStatus = "N/A";
+                if (row[9] != null) {
+                    if (row[9] instanceof Boolean) {
+                        viaticoStatus = (Boolean) row[9] ? "Sí" : "No";
+                    } else if (row[9] instanceof Number) { // Común para TINYINT(1)
+                        viaticoStatus = (((Number) row[9]).intValue() == 1) ? "Sí" : "No";
+                    }
+                }
+                table.addCell(new Cell().add(new Paragraph(viaticoStatus).setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+
+                table.addCell(new Cell().add(new Paragraph(row[10] != null ? row[10].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[11] != null ? row[11].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                alternateColor = !alternateColor;
+            }
+            document.add(table);
+
+            // Añadir el total al final
+            document.add(new Paragraph("\n")); // Espacio
+            document.add(new Paragraph("Total de Viajes Finalizados para este Vehículo: " + viajesData.size())
+                    .setFont(customFont).setFontSize(14).setBold().setTextAlignment(TextAlignment.RIGHT));
+        }
+
+        document.close();
+        return outputStream.toByteArray();
+    }
+    /**
+     * Genera un reporte PDF con la lista de todos los vehículos y su estado actual.
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/vehiculos-por-estado/pdf")
+    public ResponseEntity<byte[]> generarReporteVehiculosPorEstado() {
+        try {
+            List<Object[]> vehiculosConEstado = reporteService.obtenerVehiculosConEstado();
+            byte[] pdfBytes = generarPdfVehiculosConEstado(vehiculosConEstado);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("inline", "reporte_vehiculos_estado.pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de vehículos por estado: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Helper method to generate the PDF for vehicles with their current status.
+     * @param vehiculosData List of Object arrays with vehicle data and status.
+     * @return byte array of the generated PDF.
+     */
+    private byte[] generarPdfVehiculosConEstado(List<Object[]> vehiculosData) throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
+        Document document = new Document(pdf, PageSize.A4); // A4 normal, debería ser suficiente
+
+        PdfFont customFont;
+        try {
+            customFont = PdfFontFactory.createFont("src/main/resources/fonts/verdana.ttf", EmbeddingStrategy.PREFER_EMBEDDED);
+        } catch (IOException e) {
+            System.err.println("Error al cargar la fuente Verdana: " + e.getMessage());
+            try {
+                customFont = PdfFontFactory.createFont(StandardFonts.HELVETICA);
+            } catch (IOException ex) {
+                System.err.println("FATAL ERROR: No se pudo cargar ni la fuente personalizada ni la fuente de respaldo Helvetica: " + ex.getMessage());
+                throw new RuntimeException("No se pudo cargar ninguna fuente para el PDF.", ex);
+            }
+        }
+
+        DeviceRgb customHeaderColor = new DeviceRgb(30, 41, 59);
+
+        // Add Image
+        String imagePath = "src/main/resources/imagenes/logo.jpg";
+        try {
+            ImageData imageData = ImageDataFactory.create(imagePath);
+            Image image = new Image(imageData);
+            image.scaleToFit(80, 80);
+            document.add(image);
+            document.add(new Paragraph("\n"));
+        } catch (MalformedURLException e) {
+            System.err.println("Error: La URL de la imagen para el reporte de vehículos es incorrecta o el archivo no existe. " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error al cargar la imagen para el reporte de vehículos: " + e.getMessage());
+        }
+
+        document.add(new Paragraph("Reporte de Vehículos por Estado").setFont(customFont).setFontSize(18).setBold());
+        document.add(new Paragraph("Fecha de Generación: " + LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).setFont(customFont).setFontSize(10));
+        document.add(new Paragraph("\n"));
+
+        if (vehiculosData.isEmpty()) {
+            document.add(new Paragraph("No se encontraron vehículos en el sistema.").setFont(customFont));
+        } else {
+            // Columnas: marca (0), modelo (1), placa (2), estado_vehiculo (3)
+            Table table = new Table(new float[]{2f, 2f, 2f, 2f}); // 4 columnas
+
+            table.addCell(new Cell().add(new Paragraph("Marca").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Modelo").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Placa").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph("Estado").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
+
+            boolean alternateColor = false;
+            for (Object[] row : vehiculosData) {
+                // Índices: marca (0), modelo (1), placa (2), estado_vehiculo (3)
+                table.addCell(new Cell().add(new Paragraph(row[0] != null ? row[0].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[1] != null ? row[1].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[2] != null ? row[2].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                table.addCell(new Cell().add(new Paragraph(row[3] != null ? row[3].toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+                alternateColor = !alternateColor;
+            }
+            document.add(table);
+
+            // Añadir el total al final
+            document.add(new Paragraph("\n")); // Espacio
+            document.add(new Paragraph("Total de Vehículos: " + vehiculosData.size())
+                    .setFont(customFont).setFontSize(14).setBold().setTextAlignment(TextAlignment.RIGHT));
+        }
+
+        document.close();
+        return outputStream.toByteArray();
     }
 }

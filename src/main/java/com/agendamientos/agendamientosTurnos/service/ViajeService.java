@@ -598,7 +598,7 @@ public class ViajeService {
         return new ViajeCreationResultDTO(viajeGuardado, misionesNoAsignadasIds, mensajeAdicional);
     }
     @Transactional // Garantiza que todas las operaciones de base de datos se manejen como una única transacción
-    public ViajeCreationResultDTO actualizarViajeYAsignarMisiones(Integer idViaje, ViajeCreationWithMisionesDTO viajeDTO) {
+    public ViajeCreationResultDTO  actualizarViajeYAsignarMisiones(Integer idViaje, ViajeCreationWithMisionesDTO viajeDTO) {
         // 1. Recuperar el Viaje existente
         Optional<Viaje> existingViajeOptional = viajeRepository.findById(idViaje);
         if (existingViajeOptional.isEmpty()) {
