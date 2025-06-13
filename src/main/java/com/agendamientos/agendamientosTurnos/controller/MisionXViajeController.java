@@ -52,17 +52,21 @@ public class MisionXViajeController {
         return ResponseEntity.noContent().build();
     }
 
-  /*  @GetMapping("/viaje/{idViaje}/misiones")
-    public ResponseEntity<List<MisionXViaje>> getMisionesByViaje(@PathVariable Integer idViaje) {
-        List<MisionXViaje> misiones = service.findByViajeId(idViaje);
-        return misiones.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(misiones);
-    }*/
-  @GetMapping("/viaje/{idViaje}/misiones")
+
+  /**@GetMapping("/viaje/{idViaje}/misiones")
   public ResponseEntity<List<MisionNumeroDTO>> getMisionesByViaje(@PathVariable Integer idViaje) {
       List<MisionNumeroDTO> misiones = service.findByViajeId(idViaje)
               .stream()
               .map(misionXViaje -> new MisionNumeroDTO(misionXViaje.getMision().getNumeroMision()))
               .toList();
+      return misiones.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(misiones);
+  }*/
+
+  @GetMapping("/viaje/{idViaje}/misiones")
+  public ResponseEntity<List<MisionNumeroDTO>> getMisionesByViaje(@PathVariable Integer idViaje) {
+
+      List<MisionNumeroDTO> misiones = service.findMisionNumeroDTOsByViajeId(idViaje);
+
       return misiones.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(misiones);
   }
 

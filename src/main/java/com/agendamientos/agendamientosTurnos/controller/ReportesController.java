@@ -159,8 +159,15 @@ public class ReportesController {
         return generarReporte("attachment");
     }
 
-    @GetMapping("/funcionarios/{funcionarioCedula}/misiones")
-    public ResponseEntity<byte[]> generarReporteMisionesPorFuncionario(@PathVariable String funcionarioCedula) throws Exception {
+    /**
+     * Helper method to generate the PDF for missions by a specific employee.
+     * This method is now unified to handle both inline viewing and attachment downloading.
+     *
+     * @param funcionarioCedula The ID number of the employee.
+     * @param disposition The content disposition for the HTTP response ("inline" or "attachment").
+     * @return byte array of the generated PDF.
+     */
+    private ResponseEntity<byte[]> generarPdfMisionesPorFuncionarioUnified(String funcionarioCedula, String disposition) throws Exception {
         Optional<Funcionario> funcionarioOptional = funcionarioService.getFuncionarioByCedula(funcionarioCedula);
         if (!funcionarioOptional.isPresent()) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -173,7 +180,7 @@ public class ReportesController {
         com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
         Document document = new Document(pdf, PageSize.A4.rotate());
 
-        PdfFont customFont; // Declaración local
+        PdfFont customFont;
         try {
             customFont = PdfFontFactory.createFont("src/main/resources/fonts/verdana.ttf", EmbeddingStrategy.PREFER_EMBEDDED);
         } catch (IOException e) {
@@ -188,8 +195,8 @@ public class ReportesController {
 
         DeviceRgb customHeaderColor = new DeviceRgb(30, 41, 59);
 
-        // --- IMAGE ADDITION START for Misiones Report ---
-        String imagePath = "src/main/resources/imagenes/logo.jpg"; // Example image for missions report
+        // Add Image
+        String imagePath = "src/main/resources/imagenes/logo.jpg"; // Asegúrate que esta ruta sea correcta
         try {
             ImageData imageData = ImageDataFactory.create(imagePath);
             Image image = new Image(imageData);
@@ -201,12 +208,11 @@ public class ReportesController {
         } catch (IOException e) {
             System.err.println("Error al cargar la imagen para el reporte de misiones: " + e.getMessage());
         }
-        // --- IMAGE ADDITION END ---
 
         document.add(new Paragraph("Reporte de Misiones del Funcionario: " + funcionario.getNombre() + " " + funcionario.getApellido()).setFont(customFont).setFontSize(18).setBold());
-        document.add(new Paragraph(" ").setFont(customFont));
+        document.add(new Paragraph("\n"));
 
-        Table table = new Table(new float[]{2, 3, 2, 1});
+        Table table = new Table(new float[]{2, 3, 2, 1}); // Columnas: Número Misión, Actividades, Caso, Activo
 
         table.addCell(new Cell().add(new Paragraph("Número Misión").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
         table.addCell(new Cell().add(new Paragraph("Actividades").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
@@ -215,21 +221,10 @@ public class ReportesController {
 
         boolean alternateColor = false;
         for (Mision mision : misiones) {
-            Cell numeroMisionCell = new Cell().add(new Paragraph(mision.getNumeroMision().toString()).setFont(customFont));
-            Cell actividadesCell = new Cell().add(new Paragraph(mision.getActividades() != null ? mision.getActividades() : "N/A").setFont(customFont));
-            Cell casoCell = new Cell().add(new Paragraph(mision.getCaso() != null ? mision.getCaso().getCodigoCaso() : "N/A").setFont(customFont));
-            Cell activoCell = new Cell().add(new Paragraph(mision.getActivo() ? "Sí" : "No").setFont(customFont));
-
-            if (alternateColor) {
-                numeroMisionCell.setBackgroundColor(ColorConstants.LIGHT_GRAY);
-                actividadesCell.setBackgroundColor(ColorConstants.LIGHT_GRAY);
-                casoCell.setBackgroundColor(ColorConstants.LIGHT_GRAY);
-                activoCell.setBackgroundColor(ColorConstants.LIGHT_GRAY);
-            }
-            table.addCell(numeroMisionCell);
-            table.addCell(actividadesCell);
-            table.addCell(casoCell);
-            table.addCell(activoCell);
+            table.addCell(new Cell().add(new Paragraph(mision.getNumeroMision() != null ? mision.getNumeroMision().toString() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph(mision.getActividades() != null ? mision.getActividades() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph(mision.getCaso() != null && mision.getCaso().getCodigoCaso() != null ? mision.getCaso().getCodigoCaso() : "N/A").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
+            table.addCell(new Cell().add(new Paragraph(mision.getActivo() ? "Sí" : "No").setFont(customFont)).setBackgroundColor(alternateColor ? ColorConstants.LIGHT_GRAY : ColorConstants.WHITE));
             alternateColor = !alternateColor;
         }
 
@@ -238,92 +233,39 @@ public class ReportesController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("inline", "reporte_misiones_" + funcionario.getCedula() + ".pdf");
+        headers.setContentDispositionFormData(disposition, "reporte_misiones_" + funcionario.getCedula() + ".pdf");
 
         return new ResponseEntity<>(outputStream.toByteArray(), headers, HttpStatus.OK);
     }
 
+
+    /**
+     * Genera un reporte PDF de misiones por funcionario.
+     * El PDF se visualiza en línea en el navegador.
+     */
+    @GetMapping("/funcionarios/{funcionarioCedula}/misiones")
+    public ResponseEntity<byte[]> generarReporteMisionesPorFuncionarioOnline(@PathVariable String funcionarioCedula) throws Exception {
+        return generarPdfMisionesPorFuncionarioUnified(funcionarioCedula, "inline");
+    }
+
+    /**
+     * Genera y descarga un reporte PDF de misiones por funcionario.
+     */
     @GetMapping("/funcionarios/{funcionarioCedula}/misiones/descargar")
-    public ResponseEntity<byte[]> descargarReporteMisionesPorFuncionario(@PathVariable String funcionarioCedula) throws Exception {
-        Optional<Funcionario> funcionarioOptional = funcionarioService.getFuncionarioByCedula(funcionarioCedula);
-        if (!funcionarioOptional.isPresent()) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        Funcionario funcionario = funcionarioOptional.get();
+    public ResponseEntity<byte[]> descargarReporteMisionesPorFuncionarioOffline(@PathVariable String funcionarioCedula) throws Exception {
+        return generarPdfMisionesPorFuncionarioUnified(funcionarioCedula, "attachment");
+    }
 
-        List<Mision> misiones = misionService.obtenerMisionesPorFuncionario(funcionario);
-
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        com.itextpdf.kernel.pdf.PdfDocument pdf = new com.itextpdf.kernel.pdf.PdfDocument(new PdfWriter(outputStream));
-        Document document = new Document(pdf, PageSize.A4.rotate());
-
-        PdfFont customFont; // Declaración local
-        try {
-            customFont = PdfFontFactory.createFont("src/main/resources/fonts/verdana.ttf", EmbeddingStrategy.PREFER_EMBEDDED);
-        } catch (IOException e) {
-            System.err.println("Error al cargar la fuente Verdana: " + e.getMessage());
-            try {
-                customFont = PdfFontFactory.createFont(StandardFonts.HELVETICA);
-            } catch (IOException ex) {
-                System.err.println("FATAL ERROR: No se pudo cargar ni la fuente personalizada ni la fuente de respaldo Helvetica: " + ex.getMessage());
-                throw new RuntimeException("No se pudo cargar ninguna fuente para el PDF.", ex);
-            }
-        }
-
-        DeviceRgb customHeaderColor = new DeviceRgb(30, 41, 59);
-
-        // --- IMAGE ADDITION START for Misiones Report (Download) ---
-        String imagePath = "src/main/resources/images/imagenes/logo.jpg"; // Example image for missions report
-        try {
-            ImageData imageData = ImageDataFactory.create(imagePath);
-            Image image = new Image(imageData);
-            image.scaleToFit(80, 80);
-            document.add(image);
-            document.add(new Paragraph("\n"));
-        } catch (MalformedURLException e) {
-            System.err.println("Error: La URL de la imagen para el reporte de misiones es incorrecta o el archivo no existe. " + e.getMessage());
-        } catch (IOException e) {
-            System.err.println("Error al cargar la imagen para el reporte de misiones: " + e.getMessage());
-        }
-        // --- IMAGE ADDITION END ---
-
-        document.add(new Paragraph("Reporte de Misiones del Funcionario: " + funcionario.getNombre() + " " + funcionario.getApellido()).setFont(customFont).setFontSize(18).setBold());
-        document.add(new Paragraph(" ").setFont(customFont));
-
-        Table table = new Table(new float[]{2, 3, 2, 1});
-        table.addCell(new Cell().add(new Paragraph("Número Misión").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
-        table.addCell(new Cell().add(new Paragraph("Actividades").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
-        table.addCell(new Cell().add(new Paragraph("Caso").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
-        table.addCell(new Cell().add(new Paragraph("Activo").setFont(customFont)).setBackgroundColor(customHeaderColor).setFontColor(ColorConstants.WHITE));
-
-        boolean alternateColor = false;
-        for (Mision mision : misiones) {
-            Cell numeroMisionCell = new Cell().add(new Paragraph(mision.getNumeroMision().toString()).setFont(customFont));
-            Cell actividadesCell = new Cell().add(new Paragraph(mision.getActividades() != null ? mision.getActividades() : "N/A").setFont(customFont));
-            Cell casoCell = new Cell().add(new Paragraph(mision.getCaso() != null ? mision.getCaso().getCodigoCaso() : "N/A").setFont(customFont));
-            Cell activoCell = new Cell().add(new Paragraph(mision.getActivo() ? "Sí" : "No").setFont(customFont));
-
-            if (alternateColor) {
-                numeroMisionCell.setBackgroundColor(ColorConstants.LIGHT_GRAY);
-                actividadesCell.setBackgroundColor(ColorConstants.LIGHT_GRAY);
-                casoCell.setBackgroundColor(ColorConstants.LIGHT_GRAY);
-                activoCell.setBackgroundColor(ColorConstants.LIGHT_GRAY);
-            }
-            table.addCell(numeroMisionCell);
-            table.addCell(actividadesCell);
-            table.addCell(casoCell);
-            table.addCell(activoCell);
-            alternateColor = !alternateColor;
-        }
-
-        document.add(table);
-        document.close();
+    @GetMapping("/casos-por-funcionario/pdf/descargar")
+    public ResponseEntity<byte[]> descargarReporteCasosPorFuncionarioPdf() {
+        Map<Funcionario, List<Caso>> datosReporte = reporteService.obtenerCasosPorFuncionario();
+        byte[] pdfBytes = generarPdfCasosPorFuncionario(datosReporte);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("attachment", "reporte_misiones_" + funcionario.getCedula() + ".pdf");
+        headers.setContentDispositionFormData("inline", "reporte_casos_por_funcionario.pdf");
 
-        return new ResponseEntity<>(outputStream.toByteArray(), headers, HttpStatus.OK);
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
     @GetMapping("/casos-por-funcionario/pdf")
@@ -417,6 +359,9 @@ public class ReportesController {
         document.close();
         return outputStream.toByteArray();
     }
+
+
+
 
     /**
      * Genera un reporte PDF de viajes filtrados por un estado de viaje específico.
@@ -513,6 +458,57 @@ public class ReportesController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("inline", "reporte_misiones_finalizadas_" + funcionarioCedula + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (DateTimeParseException e) {
+            String errorMessage = "Error en el formato de fecha. Use yyyy-MM-ddTHH:mm:ss o yyyy-MM-dd HH:mm:ss. Error: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Error en los parámetros: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de misiones finalizadas: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Genera un reporte PDF de misiones finalizadas para un funcionario en un rango de fechas.
+     * @param funcionarioCedula La cédula del funcionario.
+     * @param fechaInicioStr La fecha de inicio del rango (formato yyyy-MM-dd HH:mm:ss).
+     * @param fechaFinStr La fecha de fin del rango (formato yyyy-MM-dd HH:mm:ss).
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/misiones-finalizadas-por-funcionario-y-rango/{funcionarioCedula}/pdf/descargar")
+    public ResponseEntity<byte[]> descargarReporteMisionesFinalizadasPorFuncionarioYRango(
+            @PathVariable String funcionarioCedula,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) {
+        try {
+            LocalDateTime fechaInicio = null;
+            LocalDateTime fechaFin = null;
+
+            if (fechaInicioStr != null && !fechaInicioStr.isEmpty()) {
+                fechaInicio = LocalDateTime.parse(fechaInicioStr); // Asume formato ISO_LOCAL_DATE_TIME
+            }
+            if (fechaFinStr != null && !fechaFinStr.isEmpty()) {
+                fechaFin = LocalDateTime.parse(fechaFinStr); // Asume formato ISO_LOCAL_DATE_TIME
+            }
+
+            // Llamar al servicio para obtener los datos de las misiones finalizadas
+            // Asegúrate de que el ReporteService tenga este método
+            List<Object[]> misionesFinalizadas = reporteService.obtenerMisionesFinalizadasPorFuncionarioYRango(
+                    funcionarioCedula, fechaInicio, fechaFin);
+
+            // Generar el PDF con los datos obtenidos
+            byte[] pdfBytes = generarPdfMisionesFinalizadas(misionesFinalizadas, funcionarioCedula, fechaInicio, fechaFin);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "reporte_misiones_finalizadas_" + funcionarioCedula + ".pdf");
             headers.setContentLength(pdfBytes.length);
 
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
@@ -650,6 +646,54 @@ public class ReportesController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("inline", "reporte_viajes_reprogramados_cancelados_" + funcionarioCedula + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (DateTimeParseException e) {
+            String errorMessage = "Error en el formato de fecha. Use Букмекерлар-MM-ddTHH:mm:ss o Букмекерлар-MM-dd HH:mm:ss. Error: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Error en los parámetros: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de viajes reprogramados/cancelados: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Genera un reporte PDF de viajes Reprogramados o Cancelados para un funcionario en un rango de fechas.
+     * @param funcionarioCedula La cédula del funcionario.
+     * @param fechaInicioStr La fecha de inicio del rango (formato Букмекерлар-MM-ddTHH:mm:ss o Букмекерлар-MM-dd HH:mm:ss).
+     * @param fechaFinStr La fecha de fin del rango (formato Букмекерлар-MM-ddTHH:mm:ss o Букмекерлар-MM-dd HH:mm:ss).
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/viajes-reprogramados-cancelados-por-funcionario-y-rango/{funcionarioCedula}/pdf/descargar")
+    public ResponseEntity<byte[]> descargarReporteViajesReprogramadosOCanceladosPorFuncionarioYRango(
+            @PathVariable String funcionarioCedula,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) {
+        try {
+            LocalDateTime fechaInicio = null;
+            LocalDateTime fechaFin = null;
+
+            if (fechaInicioStr != null && !fechaInicioStr.isEmpty()) {
+                fechaInicio = LocalDateTime.parse(fechaInicioStr);
+            }
+            if (fechaFinStr != null && !fechaFinStr.isEmpty()) {
+                fechaFin = LocalDateTime.parse(fechaFinStr);
+            }
+
+            List<Object[]> viajesReporte = reporteService.obtenerViajesReprogramadosOCanceladosPorFuncionarioYRango(
+                    funcionarioCedula, fechaInicio, fechaFin);
+
+            byte[] pdfBytes = generarPdfViajesReprogramadosOCancelados(viajesReporte, funcionarioCedula, fechaInicio, fechaFin);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "reporte_viajes_reprogramados_cancelados_" + funcionarioCedula + ".pdf");
             headers.setContentLength(pdfBytes.length);
 
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
@@ -813,6 +857,59 @@ public class ReportesController {
         }
     }
 
+
+    /**
+     * Genera un reporte PDF de viajes realizados por un funcionario en un rango de fechas,
+     * diferenciando entre viajes con y sin viáticos, y totalizando cada categoría.
+     * @param funcionarioCedula La cédula del funcionario.
+     * @param fechaInicioStr La fecha de inicio del rango (formato YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss).
+     * @param fechaFinStr La fecha de fin del rango (formato YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss).
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/viajes-con-sin-viaticos-por-funcionario-y-rango/{funcionarioCedula}/pdf/descargar")
+    public ResponseEntity<byte[]> descargarReporteViajesConSinViaticosPorFuncionarioYRango(
+            @PathVariable String funcionarioCedula,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) {
+        try {
+            LocalDateTime fechaInicio = null;
+            LocalDateTime fechaFin = null;
+
+            if (fechaInicioStr != null && !fechaInicioStr.isEmpty()) {
+                fechaInicio = LocalDateTime.parse(fechaInicioStr);
+            }
+            if (fechaFinStr != null && !fechaFinStr.isEmpty()) {
+                fechaFin = LocalDateTime.parse(fechaFinStr);
+            }
+
+            // El servicio devolverá un Map con dos listas: "conViaticos" y "sinViaticos"
+            Map<String, List<Object[]>> viajesPorCategoria = reporteService.obtenerViajesConSinViaticosPorFuncionarioYRango(
+                    funcionarioCedula, fechaInicio, fechaFin);
+
+            byte[] pdfBytes = generarPdfViajesConSinViaticos(
+                    viajesPorCategoria.getOrDefault("conViaticos", List.of()),
+                    viajesPorCategoria.getOrDefault("sinViaticos", List.of()),
+                    funcionarioCedula, fechaInicio, fechaFin);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "reporte_viajes_viaticos_" + funcionarioCedula + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (DateTimeParseException e) {
+            String errorMessage = "Error en el formato de fecha. Use YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss. Error: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Error en los parámetros: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de viajes con/sin viáticos: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     /**
      * Helper method to generate the PDF for trips with and without per diem (viaticos).
      * Displays separate tables and totals for each category.
@@ -971,6 +1068,31 @@ public class ReportesController {
     }
 
     /**
+     * Genera un reporte PDF con todas las misiones actualmente activas.
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/misiones-activas/pdf/descagar")
+    public ResponseEntity<byte[]> descargarReporteMisionesActivas() {
+        try {
+            List<Object[]> misionesActivas = reporteService.obtenerMisionesActivas();
+            byte[] pdfBytes = generarPdfMisionesActivas(misionesActivas);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "reporte_misiones_activas.pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de misiones activas: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
+    /**
      * Helper method to generate the PDF for active missions.
      * Uses 'activo' field from 'mision' table.
      * @param misionesData List of Object arrays with active mission data.
@@ -1080,6 +1202,55 @@ public class ReportesController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("inline", "reporte_viajes_vehiculo_" + idVehiculo + ".pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (DateTimeParseException e) {
+            String errorMessage = "Error en el formato de fecha. Use yyyy-MM-DDTHH:mm:ss o yyyy-MM-DD HH:mm:ss. Error: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Error en los parámetros: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de viajes finalizados por vehículo: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Genera un reporte PDF de viajes finalizados por un vehículo específico en un rango de fechas.
+     * @param idVehiculo El ID del vehículo.
+     * @param fechaInicioStr La fecha de inicio del rango (formato ISO 8601).
+     * @param fechaFinStr La fecha de fin del rango (formato ISO 8601).
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/viajes-finalizados-por-vehiculo/{idVehiculo}/pdf/descagar")
+    public ResponseEntity<byte[]> descargarReporteViajesFinalizadosPorVehiculo(
+            @PathVariable Integer idVehiculo,
+            @RequestParam(required = false) String fechaInicioStr,
+            @RequestParam(required = false) String fechaFinStr) {
+        try {
+            LocalDateTime fechaInicio = null;
+            LocalDateTime fechaFin = null;
+
+            if (fechaInicioStr != null && !fechaInicioStr.isEmpty()) {
+                fechaInicio = LocalDateTime.parse(fechaInicioStr);
+            }
+            if (fechaFinStr != null && !fechaFinStr.isEmpty()) {
+                fechaFin = LocalDateTime.parse(fechaFinStr);
+            }
+
+            List<Object[]> viajesFinalizados = reporteService.obtenerViajesFinalizadosPorVehiculoYRango(
+                    idVehiculo, fechaInicio, fechaFin);
+
+            byte[] pdfBytes = generarPdfViajesFinalizadosPorVehiculo(
+                    viajesFinalizados, idVehiculo, fechaInicio, fechaFin);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "reporte_viajes_vehiculo_" + idVehiculo + ".pdf");
             headers.setContentLength(pdfBytes.length);
 
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
@@ -1229,6 +1400,31 @@ public class ReportesController {
             return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    /**
+     * Genera un reporte PDF con la lista de todos los vehículos y su estado actual.
+     * @return ResponseEntity con el PDF en bytes o un error.
+     */
+    @GetMapping("/vehiculos-por-estado/pdf/descagar")
+    public ResponseEntity<byte[]> descargarReporteVehiculosPorEstado() {
+        try {
+            List<Object[]> vehiculosConEstado = reporteService.obtenerVehiculosConEstado();
+            byte[] pdfBytes = generarPdfVehiculosConEstado(vehiculosConEstado);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "reporte_vehiculos_estado.pdf");
+            headers.setContentLength(pdfBytes.length);
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            String errorMessage = "Error interno al generar el reporte de vehículos por estado: " + e.getMessage();
+            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     /**
      * Helper method to generate the PDF for vehicles with their current status.
