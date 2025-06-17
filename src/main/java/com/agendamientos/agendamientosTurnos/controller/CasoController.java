@@ -57,15 +57,5 @@ public class CasoController {
         List<CasoDetalleDTO> casosDetalle = casoService.obtenerTodosLosCasosConDetalle();
         return new ResponseEntity<>(casosDetalle, HttpStatus.OK);
     }
-/**
-    @GetMapping("/detalle/{id}")
-    public ResponseEntity<CasoDetalleDTO> obtenerCasoConDetallePorId(@PathVariable Integer id) {
-        CasoDetalleDTO casoDetalle = casoService.obtenerCasoConDetallePorId(id);
-        if (casoDetalle != null) {
-            return new ResponseEntity<>(casoDetalle, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-    }*/
 
 }

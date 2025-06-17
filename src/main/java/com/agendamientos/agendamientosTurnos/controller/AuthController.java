@@ -28,7 +28,6 @@ import java.util.Map;
         @Autowired
         FuncionarioRepository funcionarioRepository;
 
-
         @Autowired
         PasswordEncoder encoder;
 
@@ -58,6 +57,15 @@ import java.util.Map;
                     response.put("apellido", funcionario.getApellido());
                     response.put("correo", funcionario.getCorreo());
                     response.put("requiereActualizacion", funcionario.getEsContrasenaPorDefecto());
+
+                    if (funcionario.getIdRol() != null) {
+                        // Asumiendo que tu entidad 'Rol' tiene un campo 'id'
+                        response.put("idRol", funcionario.getIdRol());
+                    } else {
+                        // Manejar el caso si el rol es nulo (ej. asignar un valor por defecto o un error)
+                        response.put("idRol", null); // O podrías lanzar una excepción si siempre se espera un rol
+                    }
+
                     return ResponseEntity.ok(response);
                 } else {
                     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al obtener la información del usuario.");

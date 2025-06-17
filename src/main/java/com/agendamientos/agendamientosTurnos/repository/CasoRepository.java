@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface CasoRepository extends JpaRepository<Caso, Integer> {
 
     List<Caso> findByActivoTrue();
+
+
     Optional<Caso> findByCodigoCaso(String codigoCaso);
     //List<Caso> findByFuncionario(Funcionario funcionario);
     // Asegúrate de tener ESTE método:

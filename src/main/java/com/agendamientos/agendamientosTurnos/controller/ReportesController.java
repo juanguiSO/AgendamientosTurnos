@@ -363,66 +363,37 @@ public class ReportesController {
 
 
 
-    /**
-     * Genera un reporte PDF de viajes filtrados por un estado de viaje específico.
-     * El PDF se visualiza en línea en el navegador.
-     * @param idEstadoViaje El ID del estado de viaje por el cual se filtrarán los viajes.
-     * @return ResponseEntity con el PDF en bytes o un error.
-     */
     @GetMapping("/viajes/estado/{idEstadoViaje}/pdf")
-    public ResponseEntity<byte[]> generarReporteViajesPorEstadoPdf(@PathVariable Integer idEstadoViaje) {
-        try {
-            byte[] pdfBytes = reporteService.generarReporteViajesPorEstado(idEstadoViaje);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("inline", "reporte_viajes_estado_" + idEstadoViaje + ".pdf");
-            headers.setContentLength(pdfBytes.length);
-
-            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-        } catch (IllegalArgumentException e) {
-            // Error para estado no encontrado
-            // Convertir el mensaje a bytes
-            String errorMessage = "Error: " + e.getMessage();
-            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.NOT_FOUND);
-        } catch (Exception e) {
-            // Manejo genérico de otros errores
-            e.printStackTrace();
-            // Convertir el mensaje completo de error a bytes
-            String errorMessage = "Error al generar el reporte de viajes: " + e.getMessage();
-            return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    public ResponseEntity<byte[]> visualizarReporteViajesPorEstado(@PathVariable Integer idEstadoViaje) {
+        return generarReporteViajesPorEstadoPdf(idEstadoViaje, true);
     }
 
-    /**
-     * Genera y descarga un reporte PDF de viajes filtrados por un estado de viaje específico.
-     * @param idEstadoViaje El ID del estado de viaje por el cual se filtrarán los viajes.
-     * @return ResponseEntity con el PDF en bytes o un error.
-     */
     @GetMapping("/viajes/estado/{idEstadoViaje}/descargar")
-    public ResponseEntity<byte[]> descargarReporteViajesPorEstadoPdf(@PathVariable Integer idEstadoViaje) {
+    public ResponseEntity<byte[]> descargarReporteViajesPorEstado(@PathVariable Integer idEstadoViaje) {
+        return generarReporteViajesPorEstadoPdf(idEstadoViaje, false);
+    }
+
+    private ResponseEntity<byte[]> generarReporteViajesPorEstadoPdf(Integer idEstadoViaje, boolean enLinea) {
         try {
             byte[] pdfBytes = reporteService.generarReporteViajesPorEstado(idEstadoViaje);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("attachment", "reporte_viajes_estado_" + idEstadoViaje + ".pdf");
+            String disposition = enLinea ? "inline" : "attachment";
+            headers.setContentDispositionFormData(disposition, "reporte_viajes_estado_" + idEstadoViaje + ".pdf");
             headers.setContentLength(pdfBytes.length);
 
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
-            // Error para estado no encontrado
-            // Convertir el mensaje a bytes
             String errorMessage = "Error: " + e.getMessage();
             return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.NOT_FOUND);
         } catch (Exception e) {
-            // Manejo genérico de otros errores
             e.printStackTrace();
-            // Convertir el mensaje completo de error a bytes
             String errorMessage = "Error al generar el reporte de viajes: " + e.getMessage();
             return new ResponseEntity<>(errorMessage.getBytes(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
 
     /**
      * Genera un reporte PDF de misiones finalizadas para un funcionario en un rango de fechas.
