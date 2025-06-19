@@ -76,6 +76,13 @@ public class MisionService {
     @Transactional
     public ResponseEntity<?> guardarMision(CrearMisionDTO crearMisionDTO) {
         logger.info("Guardando nueva misión con DTO: {}", crearMisionDTO);
+
+        if (crearMisionDTO.getNumeroMision() == null ||
+                !String.valueOf(crearMisionDTO.getNumeroMision()).matches("\\d{9}")) {
+            logger.warn("Número de misión inválido: {}", crearMisionDTO.getNumeroMision());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Collections.singletonMap("error", "El número de misión debe tener exactamente 9 dígitos numéricos."));
+        }
         Mision nuevaMision = new Mision();
         nuevaMision.setNumeroMision(crearMisionDTO.getNumeroMision());
         nuevaMision.setActividades(crearMisionDTO.getActividades());

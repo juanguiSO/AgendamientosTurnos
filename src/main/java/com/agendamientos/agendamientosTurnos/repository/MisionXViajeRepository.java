@@ -22,5 +22,6 @@ public interface MisionXViajeRepository extends JpaRepository<MisionXViaje, Long
 
     Optional<MisionXViaje> findByMision(Mision mision);
 
+    List<MisionXViaje> findByViaje(Viaje viaje);
 
 }

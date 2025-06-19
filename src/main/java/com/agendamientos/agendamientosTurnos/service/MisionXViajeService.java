@@ -50,6 +50,7 @@ public class MisionXViajeService {
                     Funcionario funcionario = (mision != null) ? mision.getFuncionario() : null;
                     Caso caso = (mision != null) ? mision.getCaso() : null;
                     Especialidad especialidadMision = (mision != null) ? mision.getEspecialidad() : null; // La especialidad está en Mision
+                    Municipio municipio = (caso != null) ? caso.getMunicipio() : null;
 
                     // Construye los valores para el DTO, manejando posibles nulos de las relaciones
                     Integer numeroMision = (mision != null) ? mision.getNumeroMision() : null;
@@ -61,6 +62,7 @@ public class MisionXViajeService {
                     String especialidad = (especialidadMision != null) ? especialidadMision.getEspecialidad() : "N/A";
                     String numeroCaso = (caso != null) ? caso.getCodigoCaso() : "N/A"; // Asumiendo que Caso tiene getCodigoCaso()
                     String actividadMision = (mision != null) ? mision.getActividades() : "N/A";
+                    String nombreMunicipio = (municipio != null) ? municipio.getMunicipio() : "N/A";
 
 
                     return new MisionNumeroDTO(
@@ -69,7 +71,8 @@ public class MisionXViajeService {
                             apellidoFuncionario,
                             especialidad,
                             numeroCaso,
-                            actividadMision
+                            actividadMision,
+                            nombreMunicipio
                     );
                 })
                 .collect(Collectors.toList()); // Usar .toList() si estás en Java 16+

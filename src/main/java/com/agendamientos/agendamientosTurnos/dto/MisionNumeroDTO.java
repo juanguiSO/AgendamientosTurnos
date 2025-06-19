@@ -1,22 +1,25 @@
 package com.agendamientos.agendamientosTurnos.dto;
 
 public class MisionNumeroDTO {
+
     private Integer numeroMision;
     private String nombreFuncionario;
     private String apellidoFuncionario;
-    private String especialidadFuncionario; // Asumiendo que la especialidad es un String
-    private String numeroCaso;             // Asumiendo que el número de caso es un String (o Integer si lo prefieres)
-    private String actividadMision;        // Descripción de la actividad
+    private String especialidadFuncionario;
+    private String numeroCaso;
+    private String actividadMision;
+    private String nombreMunicipio;
 
     // Constructor con todos los campos
     public MisionNumeroDTO(Integer numeroMision, String nombreFuncionario, String apellidoFuncionario,
-                           String especialidadFuncionario, String numeroCaso, String actividadMision) {
+                           String especialidadFuncionario, String numeroCaso, String actividadMision, String nombreMunicipio) {
         this.numeroMision = numeroMision;
         this.nombreFuncionario = nombreFuncionario;
         this.apellidoFuncionario = apellidoFuncionario;
         this.especialidadFuncionario = especialidadFuncionario;
         this.numeroCaso = numeroCaso;
         this.actividadMision = actividadMision;
+        this.nombreMunicipio =nombreMunicipio;
     }
 
     // Constructor original (opcional, si aún lo necesitas para casos específicos)
@@ -50,6 +53,10 @@ public class MisionNumeroDTO {
         return actividadMision;
     }
 
+    public String getNombreMunicipio() {
+        return nombreMunicipio;
+    }
+
     // Setters (puedes generarlos automáticamente con tu IDE)
     public void setNumeroMision(Integer numeroMision) {
         this.numeroMision = numeroMision;
@@ -73,5 +80,9 @@ public class MisionNumeroDTO {
 
     public void setActividadMision(String actividadMision) {
         this.actividadMision = actividadMision;
+    }
+
+    public void setNombreMunicipio(String nombreMunicipio) {
+        this.nombreMunicipio = nombreMunicipio;
     }
 }

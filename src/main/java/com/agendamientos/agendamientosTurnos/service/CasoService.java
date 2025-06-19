@@ -55,6 +55,11 @@ public class CasoService {
     }
 
     public Caso guardarCaso(CasoDTO casoDTO) {
+
+        if (casoDTO.getCodigoCaso() == null ||
+                !casoDTO.getCodigoCaso().matches("\\d{21}")) {
+            throw new IllegalArgumentException("El código del caso debe tener exactamente 21 dígitos numéricos.");
+        }
         Caso caso = new Caso();
         caso.setActivo(casoDTO.getActivo());
         caso.setCodigoCaso(casoDTO.getCodigoCaso());
