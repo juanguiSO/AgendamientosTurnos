@@ -4,6 +4,11 @@ import com.agendamientos.agendamientosTurnos.dto.FuncionarioCreateDTO;
 import com.agendamientos.agendamientosTurnos.dto.FuncionarioDTO; // Importa FuncionarioDTO
 import com.agendamientos.agendamientosTurnos.entity.Funcionario;
 import com.agendamientos.agendamientosTurnos.service.FuncionarioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +21,18 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/funcionarios")
 @CrossOrigin(origins = "http://localhost:5173")
+@Tag(name = "Funcionarios", description = "API para la gestión de los funcionarios")
 public class FuncionarioController {
 
     @Autowired
     private FuncionarioService funcionarioService;
 
+
+
+    @Operation(summary = "Obtener lista de funcioanrios", description = "Devuelve una lista de todos los funcionarios disponibles.")
+    @ApiResponse(responseCode = "200", description = "Lista de funcionarios obtenida exitosamente",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = Funcionario.class)))
     @GetMapping
     public ResponseEntity<List<FuncionarioDTO>> getAllFuncionarios() { // Usa FuncionarioDTO
         return new ResponseEntity<>(funcionarioService.getAllFuncionarios(), HttpStatus.OK);

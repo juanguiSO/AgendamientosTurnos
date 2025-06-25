@@ -50,19 +50,33 @@ public class WebSecurityConfig {
                 .sessionManagement(sessionManagement ->
                         sessionManagement
                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Configuración sin estado
-                                .maximumSessions(1) // Número máximo de sesiones (opcional)
-                                .expiredUrl("/login") // Redirige en caso de expiración
+                                .maximumSessions(1) // Número máximo de sesiones (opcional, considera si es necesario con JWT stateless)
+                                .expiredUrl("/login") // Redirige en caso de expiración (considera si es relevante con JWT stateless)
                 )
                 .authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
+                                // Rutas existentes que ya permitías
                                 .requestMatchers("/api/auth/**", "/api/test/all").permitAll()
-                                .anyRequest().authenticated()
+                                // *****************************************************************
+                                // ************** NUEVAS RUTAS PARA SWAGGER UI Y OPENAPI **********
+                                // *****************************************************************
+                                .requestMatchers(
+                                        "/swagger-ui.html",
+                                        "/swagger-ui/**",
+                                        "/v3/api-docs/**", // Esta ruta es para la especificación JSON
+                                        "/v3/api-docs.yaml", // Esta ruta es para la especificación YAML
+                                        "/webjars/**"        // Necesario para cargar los recursos estáticos de Swagger UI
+                                ).permitAll()
+                                // *****************************************************************
+                                // ************** FIN DE LA CONFIGURACIÓN DE SWAGGER UI ***********
+                                // *****************************************************************
+                                .anyRequest().authenticated() // Todas las demás solicitudes requieren autenticación
                 )
                 .logout(logout ->
                         logout
                                 .logoutUrl("/logout") // URL de cierre de sesión
-                                .invalidateHttpSession(true) // Invalidar sesión HTTP
-                                .deleteCookies("JSESSIONID") // Borrar cookies al cerrar sesión
+                                .invalidateHttpSession(true) // Invalidar sesión HTTP (considera si es relevante con JWT stateless)
+                                .deleteCookies("JSESSIONID") // Borrar cookies al cerrar sesión (considera si es relevante con JWT stateless)
                 );
 
         // Agregar el filtro JWT antes del UsernamePasswordAuthenticationFilter

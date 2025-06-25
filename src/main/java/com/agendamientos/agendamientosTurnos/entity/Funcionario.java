@@ -1,5 +1,6 @@
 package com.agendamientos.agendamientosTurnos.entity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -11,15 +12,18 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @Table(name = "funcionario")
+@Schema(description = "Detalles de un funcionario")
 public class Funcionario {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Schema(description = "ID único del producto", example = "1")
     @Column(name = "id_funcionario")
     private Integer idFuncionario;
 
     @NotBlank(message = "El apellido no puede estar en blanco")
     @Size(max = 45, message = "El apellido no puede tener más de 45 caracteres")
+    @Schema(description = "Apellido del funcionario", example = "Preciado Zapata")
     @Column(name = "apellido", length = 45, nullable = false)
     private String apellido;
 
@@ -37,6 +41,7 @@ public class Funcionario {
     @NotBlank(message = "El nombre no puede estar en blanco")
     @Size(max = 45, message = "El nombre no puede tener más de 45 caracteres")
     @Column(name = "nombre", length = 45, nullable = false)
+    @Schema(description = "Nombre del funcionario", example = "Juan Guillermo")
     private String nombre;
 
     @NotBlank(message = "El teléfono no puede estar en blanco")
