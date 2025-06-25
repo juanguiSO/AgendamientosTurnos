@@ -44,7 +44,11 @@ public class FuncionarioController {
         return funcionario.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
-
+    @Operation(summary = "Crear nuevo funcionario", description = "Registra un nuevo funcionario en el sistema.")
+    @ApiResponse(responseCode = "201", description = "Funcionario creado exitosamente",
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = Funcionario.class)))
+    @ApiResponse(responseCode = "400", description = "Datos inválidos")
     @PostMapping
     public ResponseEntity<Funcionario> createFuncionario(@Valid @RequestBody FuncionarioCreateDTO funcionarioDTO) {
         try {

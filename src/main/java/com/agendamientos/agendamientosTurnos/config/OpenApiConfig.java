@@ -19,7 +19,6 @@ public class OpenApiConfig {
                         .description("Documentación de la API del sistema de agendamientos")
                         .version("1.0.0"));
     }
-
     @Bean
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()

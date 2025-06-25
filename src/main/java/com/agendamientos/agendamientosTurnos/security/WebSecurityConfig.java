@@ -17,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class WebSecurityConfig {
 
     @Autowired
-    CustomUserDetailsService userDetailsService;
+    private CustomUserDetailsService userDetailsService;
 
     @Autowired
     private AuthEntryPointJwt unauthorizedHandler;
@@ -28,10 +28,8 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration authenticationConfiguration
-    ) throws Exception {
-       return authenticationConfiguration.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
+        return authConfig.getAuthenticationManager();
     }
 
     @Bean
@@ -42,46 +40,28 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Deshabilitar CSRF
-                .cors(cors -> cors.configure(http)) // Configurar CORS si es necesario
-                .exceptionHandling(exceptionHandling ->
-                        exceptionHandling.authenticationEntryPoint(unauthorizedHandler)
-                )
-                .sessionManagement(sessionManagement ->
-                        sessionManagement
-                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Configuración sin estado
-                                .maximumSessions(1) // Número máximo de sesiones (opcional, considera si es necesario con JWT stateless)
-                                .expiredUrl("/login") // Redirige en caso de expiración (considera si es relevante con JWT stateless)
-                )
-                .authorizeHttpRequests(authorizeRequests ->
-                        authorizeRequests
-                                // Rutas existentes que ya permitías
-                                .requestMatchers("/api/auth/**", "/api/test/all").permitAll()
-                                // *****************************************************************
-                                // ************** NUEVAS RUTAS PARA SWAGGER UI Y OPENAPI **********
-                                // *****************************************************************
-                                .requestMatchers(
-                                        "/swagger-ui.html",
-                                        "/swagger-ui/**",
-                                        "/v3/api-docs/**", // Esta ruta es para la especificación JSON
-                                        "/v3/api-docs.yaml", // Esta ruta es para la especificación YAML
-                                        "/webjars/**"        // Necesario para cargar los recursos estáticos de Swagger UI
-                                ).permitAll()
-                                // *****************************************************************
-                                // ************** FIN DE LA CONFIGURACIÓN DE SWAGGER UI ***********
-                                // *****************************************************************
-                                .anyRequest().authenticated() // Todas las demás solicitudes requieren autenticación
-                )
-                .logout(logout ->
-                        logout
-                                .logoutUrl("/logout") // URL de cierre de sesión
-                                .invalidateHttpSession(true) // Invalidar sesión HTTP (considera si es relevante con JWT stateless)
-                                .deleteCookies("JSESSIONID") // Borrar cookies al cerrar sesión (considera si es relevante con JWT stateless)
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configure(http))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Endpoints públicos
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/test/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs.yaml",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        // Todos los demás requieren autenticación
+                        .anyRequest().authenticated()
                 );
 
-        // Agregar el filtro JWT antes del UsernamePasswordAuthenticationFilter
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 }
