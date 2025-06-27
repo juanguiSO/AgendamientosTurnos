@@ -1,28 +1,30 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
-import com.agendamientos.agendamientosTurnos.dto.MisionDTO; // Importar MisionDTO
-import com.agendamientos.agendamientosTurnos.dto.ViajeCreationDTO;
-import com.agendamientos.agendamientosTurnos.dto.ViajeCreationResultDTO;
-import com.agendamientos.agendamientosTurnos.dto.ViajeCreationWithMisionesDTO;
+import com.agendamientos.agendamientosTurnos.dto.*;
 import com.agendamientos.agendamientosTurnos.entity.Viaje;
 import com.agendamientos.agendamientosTurnos.service.ViajeService;
-import com.agendamientos.agendamientosTurnos.dto.ErrorResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import org.springframework.http.*;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-@RestController // Indicates that this class is a REST controller
-@RequestMapping("/api/viajes") // Defines the base path for all endpoints in this controller
+@RestController
+@RequestMapping("/api/viajes")
+@Tag(name = "Gestión de Viajes", description = "Operaciones relacionadas con viajes y sus misiones")
 public class ViajeController {
 
     private static final Logger logger = LoggerFactory.getLogger(ViajeController.class);
@@ -36,7 +38,9 @@ public class ViajeController {
      *
      * @return ResponseEntity with a list of active Viaje objects.
      */
-    @GetMapping // GET /api/viajes
+    @Operation(summary = "Obtener todos los viajes activos")
+    @ApiResponse(responseCode = "200", description = "Lista de viajes obtenida", content = @Content(schema = @Schema(implementation = Viaje.class)))
+    @GetMapping
     public ResponseEntity<List<Viaje>> getAllViajes() {
         // Ahora llama a findAll() en el servicio que ya filtra por 'activo'
         List<Viaje> viajes = viajeService.findAll();
@@ -50,7 +54,12 @@ public class ViajeController {
      * @param id The ID of the trip.
      * @return ResponseEntity with the Viaje object if found and active, or NOT_FOUND.
      */
-    @GetMapping("/{id}") // GET /api/viajes/{id}
+    @Operation(summary = "Obtener un viaje por ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Viaje encontrado", content = @Content(schema = @Schema(implementation = Viaje.class))),
+            @ApiResponse(responseCode = "404", description = "Viaje no encontrado")
+    })
+    @GetMapping("/{id}")
     public ResponseEntity<Viaje> getViajeById(@PathVariable Integer id) {
         // Ahora llama a findById() en el servicio que ya filtra por 'activo'
         Optional<Viaje> viaje = viajeService.findById(id);
@@ -66,7 +75,13 @@ public class ViajeController {
      * @param id The ID of the trip to logically delete.
      * @return ResponseEntity with NO_CONTENT on success, or NOT_FOUND/BAD_REQUEST on error.
      */
-    @DeleteMapping("/{id}") // DELETE /api/viajes/{id}
+    @Operation(summary = "Eliminar lógicamente un viaje")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Viaje eliminado"),
+            @ApiResponse(responseCode = "404", description = "Viaje no encontrado o inactivo"),
+            @ApiResponse(responseCode = "400", description = "Error de solicitud")
+    })
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteViaje(@PathVariable Integer id) {
         try {
             // Llama al método deleteById() del servicio que ahora realiza el borrado lógico
@@ -89,7 +104,13 @@ public class ViajeController {
      * @param viajeDTO DTO con los detalles del viaje y los IDs de los casos.
      * @return ResponseEntity con ViajeCreationResultDTO y el estado HTTP.
      */
-    @PostMapping("/crear-con-casos") // Endpoint para crear un viaje con asignación de casos (YA ERA ÚNICO)
+    @Operation(summary = "Crear un viaje y asignar casos")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Viaje creado"),
+            @ApiResponse(responseCode = "202", description = "Viaje creado con casos no asignados"),
+            @ApiResponse(responseCode = "400", description = "Error de datos")
+    })
+    @PostMapping("/crear-con-casos")// Endpoint para crear un viaje con asignación de casos (YA ERA ÚNICO)
     public ResponseEntity<ViajeCreationResultDTO> crearViajeConCasos(@Valid @RequestBody ViajeCreationDTO viajeDTO) {
         try {
             // Llama al método de servicio actualizado que devuelve ViajeCreationResultDTO
@@ -115,7 +136,9 @@ public class ViajeController {
      * @param viaje The Viaje object to create.
      * @return ResponseEntity with the created Viaje object or an error status.
      */
-    @PostMapping("/simple-creation") // <--- CAMBIO AQUÍ: Ruta única para evitar conflicto
+    @Operation(summary = "Crear un viaje simple")
+    @ApiResponse(responseCode = "201", description = "Viaje creado")
+    @PostMapping("/simple-creation")// <--- CAMBIO AQUÍ: Ruta única para evitar conflicto
     public ResponseEntity<Viaje> createViaje(@Valid @RequestBody Viaje viaje) {
         try {
             Viaje newViaje = viajeService.save(viaje);
@@ -135,6 +158,8 @@ public class ViajeController {
      * @param viajeDetails The Viaje object with updated details.
      * @return ResponseEntity with the updated Viaje object or an error status.
      */
+
+    @Operation(summary = "Actualizar un viaje existente")
     @PutMapping("/{id}")
     public ResponseEntity<Viaje> updateViaje(@PathVariable Integer id, @Valid @RequestBody Viaje viajeDetails) {
         try {
@@ -159,6 +184,7 @@ public class ViajeController {
      * @param payload A map containing a list of 'idCasos' to be associated with this trip.
      * @return ResponseEntity with the updated Viaje object or an error status.
      */
+    @Operation(summary = "Asignar casos a un viaje")
     @PutMapping("/{idViaje}/casos")
     public ResponseEntity<Viaje> asignarCasosAViaje(@PathVariable Integer idViaje, @RequestBody Map<String, List<Integer>> payload) {
         List<Integer> idCasos = payload.get("idCasos");
@@ -187,7 +213,8 @@ public class ViajeController {
      * @return ResponseEntity con ViajeCreationResultDTO y el estado HTTP CREATED (201) si es exitoso,
      * o un estado de error con un mensaje descriptivo.
      */
-    @PostMapping("/con-misiones") // <--- CAMBIO AQUÍ: Ruta única para evitar conflicto
+    @Operation(summary = "Crear un viaje con misiones")
+    @PostMapping("/con-misiones")// <--- CAMBIO AQUÍ: Ruta única para evitar conflicto
     public ResponseEntity<ViajeCreationResultDTO> crearViajeYAsignarMisiones(
             @Valid @RequestBody ViajeCreationWithMisionesDTO viajeDTO) {
         try {
@@ -206,6 +233,7 @@ public class ViajeController {
      * @param viajeDTO Los datos del viaje y misiones a actualizar, recibidos en el cuerpo de la petición.
      * @return ResponseEntity con el resultado de la operación o un mensaje de error.
      */
+    @Operation(summary = "Actualizar viaje con misiones")
     @PutMapping("/{idViaje}/misiones") // Mapea las peticiones PUT a /api/viajes/{idViaje}/misiones
     public ResponseEntity<ViajeCreationResultDTO> actualizarViaje(
             @PathVariable Integer idViaje, // Captura el ID del viaje de la URL
@@ -232,6 +260,7 @@ public class ViajeController {
      * @param idViaje El ID del viaje del cual se quieren obtener las misiones.
      * @return ResponseEntity con una lista de MisionDTOs o un estado NOT_FOUND/BAD_REQUEST.
      */
+    @Operation(summary = "Obtener misiones asociadas a un viaje")
     @GetMapping("/{idViaje}/misiones")
     public ResponseEntity<?> getMisionesByViajeId(@PathVariable Integer idViaje) {
         // Log: Indica que se ha recibido una petición para este endpoint con el ID de viaje.

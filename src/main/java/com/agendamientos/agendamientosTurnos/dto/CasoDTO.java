@@ -1,16 +1,33 @@
 package com.agendamientos.agendamientosTurnos.dto;
 
-public class CasoDTO {
+import io.swagger.v3.oas.annotations.media.Schema;
 
-    private Integer idCaso;
-    private String codigoCaso;
-    //private String delito;
-    private Integer idDelito;
-    private String nombreDefensorPublico;
-    private String nombreUsuarioVisitado;
-    private Integer idDepartamento; // <-- Cambiado a Integer
-    private Integer idMunicipio;    // <-- Cambiado a Integer
-    private Boolean activo;
+    @Schema(description = "Representación simplificada de un caso judicial.")
+    public class CasoDTO {
+
+        @Schema(description = "Identificador único del caso", example = "1")
+        private Integer idCaso;
+
+        @Schema(description = "Código único del caso, numero de 21 digitos", example = "012301230123202100520")
+        private String codigoCaso;
+
+        @Schema(description = "ID del delito asociado al caso", example = "7")
+        private Integer idDelito;
+
+        @Schema(description = "Nombre del defensor público asignado", example = "Dr. Juan Pérez")
+        private String nombreDefensorPublico;
+
+        @Schema(description = "Nombre del usuario visitado en el caso", example = "Luis Gómez")
+        private String nombreUsuarioVisitado;
+
+        @Schema(description = "ID del departamento donde se desarrolló el caso", example = "1")
+        private Integer idDepartamento;
+
+        @Schema(description = "ID del municipio donde se desarrolló el caso", example = "101")
+        private Integer idMunicipio;
+
+        @Schema(description = "Indica si el caso está activo", example = "true")
+        private Boolean activo;
 
     // Constructor por defecto (necesario para algunas frameworks)
     public CasoDTO() {

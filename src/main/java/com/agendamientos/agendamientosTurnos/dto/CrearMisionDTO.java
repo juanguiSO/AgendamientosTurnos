@@ -1,11 +1,28 @@
 package com.agendamientos.agendamientosTurnos.dto;
+import io.swagger.v3.oas.annotations.media.Schema;
 
+@Schema(description = "DTO utilizado para crear una nueva misión.")
 public class CrearMisionDTO {
-    private Integer numeroMision; // Número único para la misión
-    private String cedulaFuncionario; // Cédula del Funcionario relacionado (recibida desde el frontend)
-    private String actividades; // Descripción de las actividades
-    private String numeroCaso; // Código del Caso (reemplaza idCaso)
-    private Boolean activo; // Estado activo/inactivo
+    @Schema(
+            description = "Número único de la misión asignada, compuesto por 9 dígitos.",
+            example = "202500476",
+            minimum = "100000000", maximum = "999999999"
+    )
+    private Integer numeroMision;
+
+    @Schema(description = "Cédula del funcionario asignado a la misión", example = "1234567890")
+    private String cedulaFuncionario;
+
+    @Schema(description = "Descripción de las actividades que realizará el funcionario", example = "Visita al centro penitenciario y recolección de evidencias.")
+    private String actividades;
+
+    @Schema(description = "Código del caso judicial relacionado con la misión", example = "012301230123202100520")
+    private String numeroCaso;
+
+    @Schema(description = "Estado de la misión (activa o no)", example = "true")
+    private Boolean activo;
+
+    @Schema(description = "ID de la especialidad asociada al funcionario (puede ser opcional)", example = "3")
     private Integer idEspecialidad; // ID de la especialidad (opcional)
 
     // Constructor por defecto

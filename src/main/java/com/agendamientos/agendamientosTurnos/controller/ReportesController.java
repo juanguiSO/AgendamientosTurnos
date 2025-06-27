@@ -1,33 +1,34 @@
 package com.agendamientos.agendamientosTurnos.controller;
 
-import com.agendamientos.agendamientosTurnos.entity.*;
-import com.agendamientos.agendamientosTurnos.service.CasoService;
-import com.agendamientos.agendamientosTurnos.service.ReporteService;
-import com.itextpdf.layout.properties.TextAlignment;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import com.agendamientos.agendamientosTurnos.service.MisionService;
 import com.agendamientos.agendamientosTurnos.dto.FuncionarioDTO;
+import com.agendamientos.agendamientosTurnos.entity.Caso;
+import com.agendamientos.agendamientosTurnos.entity.Funcionario;
+import com.agendamientos.agendamientosTurnos.entity.Mision;
+import com.agendamientos.agendamientosTurnos.service.CasoService;
 import com.agendamientos.agendamientosTurnos.service.FuncionarioService;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Cell;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
-import com.itextpdf.kernel.geom.PageSize;
+import com.agendamientos.agendamientosTurnos.service.MisionService;
+import com.agendamientos.agendamientosTurnos.service.ReporteService;
+import com.itextpdf.io.font.constants.StandardFonts;
+import com.itextpdf.io.image.ImageData;
+import com.itextpdf.io.image.ImageDataFactory;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
-import com.itextpdf.io.font.constants.StandardFonts;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.font.PdfFontFactory.EmbeddingStrategy;
-import com.itextpdf.io.image.ImageData;
-import com.itextpdf.io.image.ImageDataFactory;
-import com.itextpdf.layout.element.Image;
+import com.itextpdf.kernel.geom.PageSize;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.*;
+import com.itextpdf.layout.properties.TextAlignment;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,6 +41,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/reportes")
+@Tag(name = "Reportes", description = "Generación de reportes en PDF para funcionarios")
 public class ReportesController {
 
     private final FuncionarioService funcionarioService;
@@ -149,11 +151,13 @@ public class ReportesController {
         return new ResponseEntity<>(outputStream.toByteArray(), headers, HttpStatus.OK);
     }
 
+    @Operation(summary = "Generar vista previa del reporte de funcionarios en PDF", description = "Genera un reporte de funcionarios y lo devuelve como PDF en vista inline.")
     @GetMapping("/funcionarios")
     public ResponseEntity<byte[]> generarReporteFuncionarios() throws Exception {
         return generarReporte("inline");
     }
 
+    @Operation(summary = "Descargar el reporte de funcionarios en PDF", description = "Genera y descarga un reporte en PDF con la información de todos los funcionarios.")
     @GetMapping("/funcionarios/descargar")
     public ResponseEntity<byte[]> descargarReporteFuncionarios() throws Exception {
         return generarReporte("attachment");
@@ -243,6 +247,8 @@ public class ReportesController {
      * Genera un reporte PDF de misiones por funcionario.
      * El PDF se visualiza en línea en el navegador.
      */
+    @Operation(summary = "Ver reporte PDF de misiones por funcionario",
+            description = "Muestra en línea un reporte PDF con todas las misiones asignadas al funcionario con la cédula especificada.")
     @GetMapping("/funcionarios/{funcionarioCedula}/misiones")
     public ResponseEntity<byte[]> generarReporteMisionesPorFuncionarioOnline(@PathVariable String funcionarioCedula) throws Exception {
         return generarPdfMisionesPorFuncionarioUnified(funcionarioCedula, "inline");
@@ -251,11 +257,15 @@ public class ReportesController {
     /**
      * Genera y descarga un reporte PDF de misiones por funcionario.
      */
+    @Operation(summary = "Descargar reporte PDF de misiones por funcionario",
+            description = "Descarga un archivo PDF con todas las misiones asignadas al funcionario con la cédula especificada.")
     @GetMapping("/funcionarios/{funcionarioCedula}/misiones/descargar")
     public ResponseEntity<byte[]> descargarReporteMisionesPorFuncionarioOffline(@PathVariable String funcionarioCedula) throws Exception {
         return generarPdfMisionesPorFuncionarioUnified(funcionarioCedula, "attachment");
     }
 
+    @Operation(summary = "Descargar reporte PDF de casos por funcionario",
+            description = "Descarga un archivo PDF con los casos asignados a cada funcionario.")
     @GetMapping("/casos-por-funcionario/pdf/descargar")
     public ResponseEntity<byte[]> descargarReporteCasosPorFuncionarioPdf() {
         Map<Funcionario, List<Caso>> datosReporte = reporteService.obtenerCasosPorFuncionario();
@@ -268,6 +278,8 @@ public class ReportesController {
         return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
+    @Operation(summary = "Ver reporte PDF de casos por funcionario",
+            description = "Muestra en línea un reporte PDF con los casos asignados a cada funcionario.")
     @GetMapping("/casos-por-funcionario/pdf")
     public ResponseEntity<byte[]> generarReporteCasosPorFuncionarioPdf() {
         Map<Funcionario, List<Caso>> datosReporte = reporteService.obtenerCasosPorFuncionario();
@@ -360,14 +372,19 @@ public class ReportesController {
         return outputStream.toByteArray();
     }
 
-
-
-
+    @Operation(
+            summary = "Visualizar reporte PDF de viajes por estado",
+            description = "Genera un reporte PDF que muestra todos los viajes filtrados por un estado específico. El PDF se muestra en línea en el navegador."
+    )
     @GetMapping("/viajes/estado/{idEstadoViaje}/pdf")
     public ResponseEntity<byte[]> visualizarReporteViajesPorEstado(@PathVariable Integer idEstadoViaje) {
         return generarReporteViajesPorEstadoPdf(idEstadoViaje, true);
     }
 
+    @Operation(
+            summary = "Descargar reporte PDF de viajes por estado",
+            description = "Descarga un archivo PDF que contiene los viajes filtrados por un estado específico."
+    )
     @GetMapping("/viajes/estado/{idEstadoViaje}/descargar")
     public ResponseEntity<byte[]> descargarReporteViajesPorEstado(@PathVariable Integer idEstadoViaje) {
         return generarReporteViajesPorEstadoPdf(idEstadoViaje, false);
@@ -402,6 +419,10 @@ public class ReportesController {
      * @param fechaFinStr La fecha de fin del rango (formato yyyy-MM-dd HH:mm:ss).
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Descargar reporte PDF de misiones finalizadas por funcionario",
+            description = "Descarga un archivo PDF que contiene las misiones finalizadas de un funcionario en un tango de fechas, se debe ingresar la cédula."
+    )
     @GetMapping("/misiones-finalizadas-por-funcionario-y-rango/{funcionarioCedula}/pdf")
     public ResponseEntity<byte[]> generarReporteMisionesFinalizadasPorFuncionarioYRango(
             @PathVariable String funcionarioCedula,
@@ -453,6 +474,10 @@ public class ReportesController {
      * @param fechaFinStr La fecha de fin del rango (formato yyyy-MM-dd HH:mm:ss).
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Descargar PDF de misiones finalizadas por funcionario en un rango de fechas",
+            description = "Genera y descarga un reporte en formato PDF con las misiones finalizadas asociadas a un funcionario específico, filtradas por un rango de fechas."
+    )
     @GetMapping("/misiones-finalizadas-por-funcionario-y-rango/{funcionarioCedula}/pdf/descargar")
     public ResponseEntity<byte[]> descargarReporteMisionesFinalizadasPorFuncionarioYRango(
             @PathVariable String funcionarioCedula,
@@ -593,6 +618,10 @@ public class ReportesController {
      * @param fechaFinStr La fecha de fin del rango (formato Букмекерлар-MM-ddTHH:mm:ss o Букмекерлар-MM-dd HH:mm:ss).
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Visualizar PDF de viajes reprogramados o cancelados por funcionario en un rango de fechas",
+            description = "Genera un reporte en PDF con los viajes reprogramados o cancelados asociados a un funcionario específico, filtrados por un rango de fechas. El PDF se muestra en línea en el navegador."
+    )
     @GetMapping("/viajes-reprogramados-cancelados-por-funcionario-y-rango/{funcionarioCedula}/pdf")
     public ResponseEntity<byte[]> generarReporteViajesReprogramadosOCanceladosPorFuncionarioYRango(
             @PathVariable String funcionarioCedula,
@@ -641,6 +670,10 @@ public class ReportesController {
      * @param fechaFinStr La fecha de fin del rango (formato Букмекерлар-MM-ddTHH:mm:ss o Букмекерлар-MM-dd HH:mm:ss).
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Descargar PDF de viajes reprogramados o cancelados por funcionario en un rango de fechas",
+            description = "Genera y descarga un reporte en PDF con los viajes reprogramados o cancelados de un funcionario específico, filtrados por un rango de fechas. El archivo se descarga como attachment."
+    )
     @GetMapping("/viajes-reprogramados-cancelados-por-funcionario-y-rango/{funcionarioCedula}/pdf/descargar")
     public ResponseEntity<byte[]> descargarReporteViajesReprogramadosOCanceladosPorFuncionarioYRango(
             @PathVariable String funcionarioCedula,
@@ -783,6 +816,16 @@ public class ReportesController {
      * @param fechaFinStr La fecha de fin del rango (formato YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss).
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Visualizar PDF de viajes con y sin viáticos por funcionario y rango de fechas",
+            description = "Genera un reporte en PDF diferenciando los viajes con y sin viáticos de un funcionario específico. "
+                    + "El PDF se genera en línea en el navegador. Las fechas deben estar en formato YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Reporte generado correctamente", content = @Content(mediaType = "application/pdf")),
+                    @ApiResponse(responseCode = "400", description = "Error en el formato de fecha o parámetros inválidos"),
+                    @ApiResponse(responseCode = "500", description = "Error interno al generar el reporte")
+            }
+    )
     @GetMapping("/viajes-con-sin-viaticos-por-funcionario-y-rango/{funcionarioCedula}/pdf")
     public ResponseEntity<byte[]> generarReporteViajesConSinViaticosPorFuncionarioYRango(
             @PathVariable String funcionarioCedula,
@@ -837,6 +880,16 @@ public class ReportesController {
      * @param fechaFinStr La fecha de fin del rango (formato YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss).
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Descargar PDF de viajes con y sin viáticos por funcionario y rango de fechas",
+            description = "Genera y descarga un reporte en PDF diferenciando los viajes con y sin viáticos de un funcionario específico. "
+                    + "Las fechas deben estar en formato YYYY-MM-DDTHH:mm:ss o YYYY-MM-DD HH:mm:ss.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Reporte generado y descargado correctamente", content = @Content(mediaType = "application/pdf")),
+                    @ApiResponse(responseCode = "400", description = "Error en el formato de fecha o parámetros inválidos"),
+                    @ApiResponse(responseCode = "500", description = "Error interno al generar el reporte")
+            }
+    )
     @GetMapping("/viajes-con-sin-viaticos-por-funcionario-y-rango/{funcionarioCedula}/pdf/descargar")
     public ResponseEntity<byte[]> descargarReporteViajesConSinViaticosPorFuncionarioYRango(
             @PathVariable String funcionarioCedula,
@@ -1018,6 +1071,14 @@ public class ReportesController {
      * Genera un reporte PDF con todas las misiones actualmente activas.
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Visualiza PDF de misiones activas",
+            description = "Genera un reporte en PDF con todas las misiones que se encuentran actualmente activas. El PDF se muestra en el navegador.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "PDF generado correctamente", content = @Content(mediaType = "application/pdf")),
+                    @ApiResponse(responseCode = "500", description = "Error interno al generar el reporte")
+            }
+    )
     @GetMapping("/misiones-activas/pdf")
     public ResponseEntity<byte[]> generarReporteMisionesActivas() {
         try {
@@ -1042,6 +1103,14 @@ public class ReportesController {
      * Genera un reporte PDF con todas las misiones actualmente activas.
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Descarga PDF de misiones activas",
+            description = "Genera un archivo PDF descargable con todas las misiones que se encuentran actualmente activas.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "PDF generado correctamente", content = @Content(mediaType = "application/pdf")),
+                    @ApiResponse(responseCode = "500", description = "Error interno al generar el reporte")
+            }
+    )
     @GetMapping("/misiones-activas/pdf/descagar")
     public ResponseEntity<byte[]> descargarReporteMisionesActivas() {
         try {
@@ -1148,6 +1217,20 @@ public class ReportesController {
      * @param fechaFinStr La fecha de fin del rango (formato ISO 8601).
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Visualiza PDF de viajes finalizados por vehículo",
+            description = "Genera un reporte PDF con los viajes finalizados de un vehículo específico en un rango de fechas. El PDF se muestra en el navegador.",
+            parameters = {
+                    @Parameter(name = "idVehiculo", description = "ID del vehículo", required = true),
+                    @Parameter(name = "fechaInicioStr", description = "Fecha de inicio del rango (formato ISO 8601)", required = false),
+                    @Parameter(name = "fechaFinStr", description = "Fecha de fin del rango (formato ISO 8601)", required = false)
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "PDF generado correctamente", content = @Content(mediaType = "application/pdf")),
+                    @ApiResponse(responseCode = "400", description = "Error en el formato de fecha o parámetros"),
+                    @ApiResponse(responseCode = "500", description = "Error interno al generar el reporte")
+            }
+    )
     @GetMapping("/viajes-finalizados-por-vehiculo/{idVehiculo}/pdf")
     public ResponseEntity<byte[]> generarReporteViajesFinalizadosPorVehiculo(
             @PathVariable Integer idVehiculo,
@@ -1197,6 +1280,20 @@ public class ReportesController {
      * @param fechaFinStr La fecha de fin del rango (formato ISO 8601).
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Descarga PDF de viajes finalizados por vehículo",
+            description = "Genera un archivo PDF descargable con los viajes finalizados de un vehículo específico en un rango de fechas.",
+            parameters = {
+                    @Parameter(name = "idVehiculo", description = "ID del vehículo", required = true),
+                    @Parameter(name = "fechaInicioStr", description = "Fecha de inicio del rango (formato ISO 8601)", required = false),
+                    @Parameter(name = "fechaFinStr", description = "Fecha de fin del rango (formato ISO 8601)", required = false)
+            },
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "PDF descargado correctamente", content = @Content(mediaType = "application/pdf")),
+                    @ApiResponse(responseCode = "400", description = "Error en el formato de fecha o parámetros"),
+                    @ApiResponse(responseCode = "500", description = "Error interno al generar el reporte")
+            }
+    )
     @GetMapping("/viajes-finalizados-por-vehiculo/{idVehiculo}/pdf/descagar")
     public ResponseEntity<byte[]> descargarReporteViajesFinalizadosPorVehiculo(
             @PathVariable Integer idVehiculo,
@@ -1352,6 +1449,14 @@ public class ReportesController {
      * Genera un reporte PDF con la lista de todos los vehículos y su estado actual.
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Visualiza PDF de vehículos por estado",
+            description = "Genera un reporte PDF con todos los vehículos y su estado actual. El reporte se abre en el navegador.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "PDF generado correctamente", content = @Content(mediaType = "application/pdf")),
+                    @ApiResponse(responseCode = "500", description = "Error interno al generar el reporte")
+            }
+    )
     @GetMapping("/vehiculos-por-estado/pdf")
     public ResponseEntity<byte[]> generarReporteVehiculosPorEstado() {
         try {
@@ -1376,6 +1481,14 @@ public class ReportesController {
      * Genera un reporte PDF con la lista de todos los vehículos y su estado actual.
      * @return ResponseEntity con el PDF en bytes o un error.
      */
+    @Operation(
+            summary = "Descarga PDF de vehículos por estado",
+            description = "Genera un archivo PDF descargable con la lista de todos los vehículos y su estado actual.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "PDF descargado correctamente", content = @Content(mediaType = "application/pdf")),
+                    @ApiResponse(responseCode = "500", description = "Error interno al generar el reporte")
+            }
+    )
     @GetMapping("/vehiculos-por-estado/pdf/descagar")
     public ResponseEntity<byte[]> descargarReporteVehiculosPorEstado() {
         try {

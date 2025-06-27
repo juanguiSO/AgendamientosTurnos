@@ -1,16 +1,45 @@
 package com.agendamientos.agendamientosTurnos.dto;
 
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "DTO que representa una misión asignada a un funcionario con detalles del caso y la especialidad.")
 public class MisionDTO {
+
+    @Schema(
+            description = "Número único de la misión asignada, compuesto por 9 dígitos.",
+            example = "202500476",
+            minimum = "100000000", maximum = "999999999"
+    )
     private Integer numeroMision;
+
+    @Schema(description = "ID del funcionario al que se asignó la misión", example = "12")
     private Integer idFuncionario;
+
+    @Schema(description = "Nombre del funcionario", example = "Carlos")
     private String nombreFuncionario;
+
+    @Schema(description = "Apellido del funcionario", example = "Pérez")
     private String apellidoFuncionario;
+
+    @Schema(description = "Descripción de las actividades asignadas en la misión", example = "Inspección ocular y toma de testimonios")
     private String actividades;
+
+    @Schema(description = "Código del caso judicial asociado a la misión, numero de 21 digitos", example = "012301230123202100520")
     private String numeroCaso;
-    private Integer idCaso; // Nuevo campo para el ID del caso
+
+    @Schema(description = "ID interno del caso", example = "20")
+    private Integer idCaso;
+
+    @Schema(description = "Indica si la misión está activa", example = "true")
     private Boolean activo;
+
+    @Schema(description = "ID de la especialidad del funcionario", example = "3")
     private Integer idEspecialidad;
+
+    @Schema(description = "Nombre de la especialidad asociada al funcionario", example = "Derecho Penal")
     private String especialidad;
+
 
     public MisionDTO() {
     }

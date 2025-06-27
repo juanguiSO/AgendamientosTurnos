@@ -1,19 +1,25 @@
 package com.agendamientos.agendamientosTurnos.dto;
 
-
 import com.agendamientos.agendamientosTurnos.entity.Viaje;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
 /**
- * DTO de resultado para el método de creación de viajes.
- * Contiene el viaje creado, los IDs de las misiones que no pudieron ser asignadas
- * y un mensaje adicional informativo.
+ * DTO de resultado para la creación de un viaje.
+ * Contiene información sobre el viaje creado, misiones no asignadas y un mensaje adicional.
  */
+@Schema(description = "DTO de resultado para la creación de un viaje, incluye el viaje creado, las misiones que no pudieron asignarse y un mensaje.")
 public class ViajeCreationResultDTO {
+
+    @Schema(description = "Objeto de viaje que fue creado exitosamente.")
     private Viaje viajeCreado;
-    private List<Integer> misionesNoAsignadasIds; // IDs de las misiones que excedieron la capacidad del vehículo
-    private String mensajeAdicional; // Mensaje informativo para el usuario
+
+    @Schema(description = "Lista de IDs de misiones que no pudieron ser asignadas al viaje por superar la capacidad del vehículo.", example = "[101, 102]")
+    private List<Integer> misionesNoAsignadasIds;
+
+    @Schema(description = "Mensaje adicional que explica el resultado de la operación.", example = "Se creó el viaje, pero 2 misiones no fueron asignadas por exceso de capacidad.")
+    private String mensajeAdicional;
 
     /**
      * Constructor para ViajeCreationResultDTO.

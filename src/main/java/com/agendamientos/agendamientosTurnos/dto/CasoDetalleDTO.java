@@ -1,18 +1,44 @@
 package com.agendamientos.agendamientosTurnos.dto;
 
-public class CasoDetalleDTO {
+import io.swagger.v3.oas.annotations.media.Schema;
 
-    private Integer idCaso;
-    private String codigoCaso;
-    private Integer idDelito;         // ID del delito
-    private String tipoDelito;       // Tipo del delito
-    private String nombreDefensorPublico;
-    private String nombreUsuarioVisitado;
-    private Integer idDepartamento;
-    private String nombreDepartamento;
-    private Integer idMunicipio;
-    private String nombreMunicipio;
-    private Boolean activo;
+
+    @Schema(description = "Detalle de un caso, incluyendo información del delito, ubicación y actores involucrados.")
+    public class CasoDetalleDTO {
+
+        @Schema(description = "Identificador único del caso", example = "1")
+        private Integer idCaso;
+
+        @Schema(description = "Código único del caso, numero de 21 digitos", example = "012301230123202100520")
+        private String codigoCaso;
+
+        @Schema(description = "Identificador del delito asociado", example = "5")
+        private Integer idDelito;
+
+        @Schema(description = "Nombre o tipo del delito", example = "Hurto calificado")
+        private String tipoDelito;
+
+        @Schema(description = "Nombre completo del defensor público asignado", example = "Dra. Carolina Gómez")
+        private String nombreDefensorPublico;
+
+        @Schema(description = "Nombre del usuario visitado en el caso", example = "Juan Pérez")
+        private String nombreUsuarioVisitado;
+
+        @Schema(description = "ID del departamento donde ocurrió el caso", example = "1")
+        private Integer idDepartamento;
+
+        @Schema(description = "Nombre del departamento", example = "Antioquia")
+        private String nombreDepartamento;
+
+        @Schema(description = "ID del municipio donde ocurrió el caso", example = "101")
+        private Integer idMunicipio;
+
+        @Schema(description = "Nombre del municipio", example = "Medellín")
+        private String nombreMunicipio;
+
+        @Schema(description = "Indica si el caso está activo", example = "true")
+        private Boolean activo;
+
 
     // Constructor por defecto
     public CasoDetalleDTO() {

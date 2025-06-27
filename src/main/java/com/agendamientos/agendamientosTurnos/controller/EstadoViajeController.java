@@ -2,6 +2,12 @@ package com.agendamientos.agendamientosTurnos.controller;
 
 import com.agendamientos.agendamientosTurnos.entity.EstadoViaje;
 import com.agendamientos.agendamientosTurnos.service.EstadoViajeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,39 +17,53 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
-@RestController // Indica que esta clase es un controlador REST
-@RequestMapping("/api/estado-viajes") // Define la ruta base para todos los endpoints de este controlador
+@RestController
+@RequestMapping("/api/estado-viajes")
+@Tag(name = "Estados de Viaje", description = "Operaciones relacionadas con los estados de viaje")
 public class EstadoViajeController {
 
-    @Autowired // Inyecta una instancia de EstadoViajeService
+    @Autowired
     private EstadoViajeService estadoViajeService;
 
-    // Endpoint para obtener todos los estados de viaje
-    @GetMapping // GET /api/estado-viajes
+    @Operation(summary = "Listar todos los estados de viaje", description = "Devuelve todos los estados de viaje registrados.")
+    @ApiResponse(responseCode = "200", description = "Lista obtenida exitosamente",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = EstadoViaje.class)))
+    @GetMapping
     public ResponseEntity<List<EstadoViaje>> getAllEstadoViajes() {
         List<EstadoViaje> estadoViajes = estadoViajeService.findAll();
         return new ResponseEntity<>(estadoViajes, HttpStatus.OK);
     }
 
-    // Endpoint para obtener un estado de viaje por ID
-    @GetMapping("/{id}") // GET /api/estado-viajes/{id}
-    public ResponseEntity<EstadoViaje> getEstadoViajeById(@PathVariable Integer id) {
+    @Operation(summary = "Obtener estado de viaje por ID", description = "Devuelve un estado de viaje específico por su ID.")
+    @ApiResponse(responseCode = "200", description = "Estado de viaje encontrado",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = EstadoViaje.class)))
+    @ApiResponse(responseCode = "404", description = "Estado de viaje no encontrado")
+    @GetMapping("/{id}")
+    public ResponseEntity<EstadoViaje> getEstadoViajeById(
+            @Parameter(description = "ID del estado de viaje", example = "1") @PathVariable Integer id) {
         Optional<EstadoViaje> estadoViaje = estadoViajeService.findById(id);
         return estadoViaje.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    // Endpoint para crear un nuevo estado de viaje
-    @PostMapping // POST /api/estado-viajes
-    public ResponseEntity<EstadoViaje> createEstadoViaje(@Valid @RequestBody EstadoViaje estadoViaje) {
-        // @Valid activa las validaciones de la entidad (ej. @NotBlank, @Size)
+    @Operation(summary = "Crear un nuevo estado de viaje", description = "Registra un nuevo estado de viaje en el sistema.")
+    @ApiResponse(responseCode = "201", description = "Estado de viaje creado exitosamente",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = EstadoViaje.class)))
+    @PostMapping
+    public ResponseEntity<EstadoViaje> createEstadoViaje(
+            @Valid @RequestBody EstadoViaje estadoViaje) {
         EstadoViaje newEstadoViaje = estadoViajeService.save(estadoViaje);
         return new ResponseEntity<>(newEstadoViaje, HttpStatus.CREATED);
     }
 
-    // Endpoint para actualizar un estado de viaje existente
-    @PutMapping("/{id}") // PUT /api/estado-viajes/{id}
-    public ResponseEntity<EstadoViaje> updateEstadoViaje(@PathVariable Integer id, @Valid @RequestBody EstadoViaje estadoViajeDetails) {
+    @Operation(summary = "Actualizar estado de viaje", description = "Modifica los datos de un estado de viaje existente por su ID.")
+    @ApiResponse(responseCode = "200", description = "Estado de viaje actualizado",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = EstadoViaje.class)))
+    @ApiResponse(responseCode = "404", description = "Estado de viaje no encontrado")
+    @PutMapping("/{id}")
+    public ResponseEntity<EstadoViaje> updateEstadoViaje(
+            @Parameter(description = "ID del estado de viaje", example = "1") @PathVariable Integer id,
+            @Valid @RequestBody EstadoViaje estadoViajeDetails) {
         try {
             EstadoViaje updatedEstadoViaje = estadoViajeService.update(id, estadoViajeDetails);
             return new ResponseEntity<>(updatedEstadoViaje, HttpStatus.OK);
@@ -52,17 +72,18 @@ public class EstadoViajeController {
         }
     }
 
-    // Endpoint para eliminar un estado de viaje por ID
-    @DeleteMapping("/{id}") // DELETE /api/estado-viajes/{id}
-    public ResponseEntity<Void> deleteEstadoViaje(@PathVariable Integer id) {
+    @Operation(summary = "Eliminar estado de viaje", description = "Elimina un estado de viaje del sistema por su ID.")
+    @ApiResponse(responseCode = "204", description = "Estado eliminado exitosamente")
+    @ApiResponse(responseCode = "404", description = "Estado de viaje no encontrado")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEstadoViaje(
+            @Parameter(description = "ID del estado a eliminar", example = "1") @PathVariable Integer id) {
         Optional<EstadoViaje> estadoViaje = estadoViajeService.findById(id);
         if (estadoViaje.isPresent()) {
             estadoViajeService.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // 204 No Content
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
-
-
 }
