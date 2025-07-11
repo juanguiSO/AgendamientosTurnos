@@ -270,5 +270,38 @@ public class MisionService {
                 .collect(Collectors.toList());
     }
 
+    public List<MisionDTO> obtenerTodasLasMisionesActivasDTO() {
+        return misionRepository.findAll().stream()
+                .filter(m -> m.getActivo() != null && m.getActivo())
+                .map(m -> new MisionDTO(
+                        m.getNumeroMision(),
+                        m.getFuncionario() != null ? m.getFuncionario().getIdFuncionario() : null,
+                        m.getFuncionario() != null ? m.getFuncionario().getNombre() : "Sin Funcionario",
+                        m.getFuncionario() != null ? m.getFuncionario().getApellido() : "Sin Funcionario",
+                        m.getActividades(),
+                        m.getCaso() != null ? m.getCaso().getCodigoCaso() : "Sin Caso",
+                        m.getCaso() != null ? m.getCaso().getIdCaso() : null, // Aquí obtenemos el ID del caso
+                        m.getActivo(),
+                        m.getEspecialidad() != null ? m.getEspecialidad().getIdEspecialidad(): null,
+                        m.getEspecialidad()!= null ? m.getEspecialidad().getEspecialidad():"Sin Especialidad"))
+                .collect(Collectors.toList());
+    }
+
+    public List<MisionDTO> obtenerTodasLasMisionesInactivasDTO() {
+        return misionRepository.findAll().stream()
+                .filter(m -> m.getActivo() != null && !m.getActivo())
+                .map(m -> new MisionDTO(
+                        m.getNumeroMision(),
+                        m.getFuncionario() != null ? m.getFuncionario().getIdFuncionario() : null,
+                        m.getFuncionario() != null ? m.getFuncionario().getNombre() : "Sin Funcionario",
+                        m.getFuncionario() != null ? m.getFuncionario().getApellido() : "Sin Funcionario",
+                        m.getActividades(),
+                        m.getCaso() != null ? m.getCaso().getCodigoCaso() : "Sin Caso",
+                        m.getCaso() != null ? m.getCaso().getIdCaso() : null, // Aquí obtenemos el ID del caso
+                        m.getActivo(),
+                        m.getEspecialidad() != null ? m.getEspecialidad().getIdEspecialidad(): null,
+                        m.getEspecialidad()!= null ? m.getEspecialidad().getEspecialidad():"Sin Especialidad"))
+                .collect(Collectors.toList());
+    }
 
 }

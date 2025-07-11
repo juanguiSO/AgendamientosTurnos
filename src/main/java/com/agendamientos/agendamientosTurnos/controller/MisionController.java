@@ -72,15 +72,15 @@ public class MisionController {
 
     @Operation(summary = "Obtener misiones activas")
     @GetMapping("/activas")
-    public ResponseEntity<List<Mision>> obtenerMisionesActivas() {
-        List<Mision> misionesActivas = misionService.obtenerMisionesActivas();
+    public ResponseEntity<List<MisionDTO>> obtenerMisionesActivas() {
+        List<MisionDTO> misionesActivas = misionService.obtenerTodasLasMisionesActivasDTO();
         return new ResponseEntity<>(misionesActivas, HttpStatus.OK);
     }
 
     @Operation(summary = "Obtener misiones inactivas")
     @GetMapping("/inactivas")
-    public ResponseEntity<List<Mision>> obtenerMisionesInactivas() {
-        List<Mision> misionesInactivas = misionService.obtenerMisionesInactivas();
+    public ResponseEntity<List<MisionDTO>> obtenerMisionesInactivas() {
+        List<MisionDTO> misionesInactivas = misionService.obtenerTodasLasMisionesInactivasDTO();
         return new ResponseEntity<>(misionesInactivas, HttpStatus.OK);
     }
 
