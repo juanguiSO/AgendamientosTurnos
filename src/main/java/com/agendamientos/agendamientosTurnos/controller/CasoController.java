@@ -84,4 +84,17 @@ public class CasoController {
         List<CasoDetalleDTO> casosDetalle = casoService.obtenerTodosLosCasosConDetalle();
         return new ResponseEntity<>(casosDetalle, HttpStatus.OK);
     }
+    @GetMapping("/detalle/activos")
+    public ResponseEntity<List<CasoDetalleDTO>> obtenerCasosActivosConDetalle() {
+        List<CasoDetalleDTO> casos = casoService.obtenerCasosActivosConDetalle();
+        return new ResponseEntity<>(casos, HttpStatus.OK);
+    }
+
+    @GetMapping("/detalle/inactivos")
+    public ResponseEntity<List<CasoDetalleDTO>> obtenerCasosInactivosConDetalle() {
+        List<CasoDetalleDTO> casos = casoService.obtenerCasosInactivosConDetalle();
+        return new ResponseEntity<>(casos, HttpStatus.OK);
+    }
+
+
 }

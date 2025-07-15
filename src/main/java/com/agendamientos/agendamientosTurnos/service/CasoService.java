@@ -269,6 +269,20 @@ public class CasoService {
                 .collect(Collectors.toList());
     }
 
+    public List<CasoDetalleDTO> obtenerCasosActivosConDetalle() {
+        List<Caso> casosActivos = casoRepository.findByActivo(true);
+        return casosActivos.stream()
+                .map(this::convertToCasoDetalleDTO)
+                .collect(Collectors.toList());
+    }
+    public List<CasoDetalleDTO> obtenerCasosInactivosConDetalle() {
+        List<Caso> casosInactivos = casoRepository.findByActivo(false);
+        return casosInactivos.stream()
+                .map(this::convertToCasoDetalleDTO)
+                .collect(Collectors.toList());
+    }
+
+
     private CasoDetalleDTO convertToCasoDetalleDTO(Caso caso) {
         CasoDetalleDTO dto = new CasoDetalleDTO();
         dto.setIdCaso(caso.getIdCaso());

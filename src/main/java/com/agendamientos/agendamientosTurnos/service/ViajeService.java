@@ -161,21 +161,22 @@ public class ViajeService {
      */
     @Transactional
     public Viaje update(Integer id, Viaje viajeDetails) {
-        // Usa findById normal para encontrar el viaje, incluso si está inactivo,
-        // para poder lanzar una excepción más específica si ya lo está.
         Optional<Viaje> optionalViaje = viajeRepository.findById(id);
         if (optionalViaje.isPresent()) {
             Viaje viaje = optionalViaje.get();
 
-            viaje.setActivo(viajeDetails.isActivo());
+            // 🔒 VALIDACIÓN: la fecha de inicio no puede ser anterior a la fecha actual
+            if (viajeDetails.getTiempoInicio() != null && viajeDetails.getTiempoInicio().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("La fecha de inicio del viaje no puede ser anterior a la fecha actual.");
+            }
 
+            viaje.setActivo(viajeDetails.isActivo());
             viaje.setTiempoFin(viajeDetails.getTiempoFin());
             viaje.setTiempoInicio(viajeDetails.getTiempoInicio());
             viaje.setDistanciaRecorrida(viajeDetails.getDistanciaRecorrida());
-
             viaje.setViatico(calcularViatico(viaje.getDistanciaRecorrida()));
 
-            // Actualizar la relación con EstadoViaje
+            // Actualizar EstadoViaje
             if (viajeDetails.getEstadoViaje() != null && viajeDetails.getEstadoViaje().getIdEstadoViaje() != null) {
                 Optional<EstadoViaje> existingEstadoViaje = estadoViajeRepository.findById(viajeDetails.getEstadoViaje().getIdEstadoViaje());
                 if (existingEstadoViaje.isEmpty()) {
@@ -186,7 +187,7 @@ public class ViajeService {
                 throw new RuntimeException("Se debe proporcionar un EstadoViaje para actualizar el viaje.");
             }
 
-            // Actualizar la relación con Vehiculo
+            // Actualizar Vehiculo
             if (viajeDetails.getVehiculo() != null && viajeDetails.getVehiculo().getIdVehiculo() != null) {
                 Optional<Vehiculo> existingVehiculo = vehiculoRepository.findById(viajeDetails.getVehiculo().getIdVehiculo());
                 if (existingVehiculo.isEmpty()) {
@@ -213,6 +214,9 @@ public class ViajeService {
         }
         Viaje viajeExistente = existingViajeOptional.get();
 
+        if (viajeDTO.getTiempoInicio() != null && viajeDTO.getTiempoInicio().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("La fecha de inicio del viaje no puede ser anterior a la fecha y hora actual.");
+        }
         // 2. Actualizar los detalles básicos del Viaje
         viajeExistente.setTiempoInicio(viajeDTO.getTiempoInicio());
         viajeExistente.setTiempoFin(viajeDTO.getTiempoFin());
@@ -396,9 +400,16 @@ public class ViajeService {
      */
     @Transactional // Asegura que todas las operaciones de base de datos se manejen como una sola transacción
     public ViajeCreationResultDTO crearViajeYAsignarCasos(ViajeCreationDTO viajeDTO) {
+
+
         // 1. Inicialización del nuevo Viaje
         Viaje nuevoViaje = new Viaje();
+
         nuevoViaje.setTiempoInicio(viajeDTO.getTiempoInicio());
+        if (viajeDTO.getTiempoInicio() != null && viajeDTO.getTiempoInicio().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("La fecha de inicio del viaje no puede ser anterior a la fecha y hora actual.");
+        }
+
         nuevoViaje.setTiempoFin(viajeDTO.getTiempoFin());
         nuevoViaje.setDistanciaRecorrida(viajeDTO.getDistanciaRecorrida());
 
@@ -622,6 +633,10 @@ public class ViajeService {
         // 1. Inicialización del nuevo Viaje
         Viaje nuevoViaje = new Viaje();
         nuevoViaje.setTiempoInicio(viajeDTO.getTiempoInicio());
+        if (viajeDTO.getTiempoInicio() != null && viajeDTO.getTiempoInicio().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("La fecha de inicio del viaje no puede ser anterior a la fecha y hora actual.");
+        }
+
         nuevoViaje.setTiempoFin(viajeDTO.getTiempoFin());
         nuevoViaje.setDistanciaRecorrida(viajeDTO.getDistanciaRecorrida());
 
@@ -705,9 +720,8 @@ public class ViajeService {
                                     " ya está asignada al viaje con ID " + existingMisionXViaje.get().getViaje().getIdViaje() +
                                     ". No se puede crear el nuevo viaje."
                     );
-                    /**misionesNoAsignadasIds.add(mision.getNumeroMision());
-                    System.out.println("ADVERTENCIA: La misión con ID " + mision.getNumeroMision() + " ya está programada en el viaje con ID " + existingMisionXViaje.get().getViaje().getIdViaje() + ". No se asignará a este nuevo viaje.");
-                    continue; // Pasamos a la siguiente misión*/
+
+
                 }
                 // --- FIN DE VALIDACIÓN 2 ---
 
@@ -853,4 +867,49 @@ public class ViajeService {
 
         return dto;
     }
+    @Transactional
+    public void actualizarEstadoViaje(Integer idViaje, Integer nuevoEstadoId) {
+        Viaje viaje = viajeRepository.findById(idViaje)
+                .orElseThrow(() -> new RuntimeException("Viaje no encontrado con ID: " + idViaje));
+
+        EstadoViaje nuevoEstado = estadoViajeRepository.findById(nuevoEstadoId)
+                .orElseThrow(() -> new RuntimeException("Estado de viaje no encontrado con ID: " + nuevoEstadoId));
+
+        viaje.setEstadoViaje(nuevoEstado);
+        viajeRepository.save(viaje);
+
+        // Si el estado es FINALIZADO, desactivar misiones y posiblemente los casos
+        if (nuevoEstado.getEstadoViaje().equalsIgnoreCase("Finalizado")) {
+            List<MisionXViaje> relaciones = misionXViajeRepository.findByViaje_IdViaje(idViaje);
+
+            Set<Caso> casosVerificados = new HashSet<>(); // para no verificar un mismo caso varias veces
+
+            for (MisionXViaje rel : relaciones) {
+                Mision mision = rel.getMision();
+                if (mision != null && Boolean.TRUE.equals(mision.getActivo())) {
+                    mision.setActivo(false);
+                    misionRepository.save(mision);
+                }
+
+                // Evaluar el caso si la misión está asociada
+                if (mision != null && mision.getCaso() != null) {
+                    Caso caso = mision.getCaso();
+                    if (!casosVerificados.contains(caso)) {
+                        casosVerificados.add(caso); // lo marcamos como verificado para evitar repetir
+
+                        // Verificamos si todas las misiones del caso están inactivas
+                        boolean todasInactivas = caso.getMisiones().stream()
+                                .allMatch(m -> Boolean.FALSE.equals(m.getActivo()));
+
+                        if (todasInactivas && Boolean.TRUE.equals(caso.getActivo())) {
+                            caso.setActivo(false);
+                            casoRepository.save(caso);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
 }

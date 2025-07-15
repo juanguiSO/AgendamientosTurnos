@@ -14,6 +14,7 @@ public interface CasoRepository extends JpaRepository<Caso, Integer> {
 
     List<Caso> findByActivoTrue();
 
+    List<Caso> findByActivo(Boolean activo);
 
     Optional<Caso> findByCodigoCaso(String codigoCaso);
     //List<Caso> findByFuncionario(Funcionario funcionario);
